@@ -1,3 +1,32 @@
+# Env
 .env
-docker
+
+# Docker
+docker/backups/
+docker/data/
+docker/volumes/
+
+# Postgres
+*.sql.dump
+
+# Node
+node_modules/
+.next/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Java
+target/
+*.jar
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+#Documentation
 documentation

@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: stock-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - stock-network
+
+  postgres-backup:
+    image: postgres:16
+    container_name: stock-postgres-backup
+    depends_on:
+      - postgres
+    volumes:
+      - ./backups:/backups
+    entrypoint: >
+      bash -c "
+      while true; do
+        pg_dump -h postgres -U ${POSTGRES_USER} ${POSTGRES_DB} > /backups/backup_$(date +%Y-%m-%d_%H-%M-%S).sql;
+        sleep 86400;
+      done
+      "
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - stock-network
+
+  data-collection-service:
+    build: ../services/DataCollectionService
+    container_name: data-collection-service
+    restart: always
+    ports:
+      - "${PORT}"
+    depends_on:
+      postgres:
+       condition: service_healthy
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    networks:
+      - stock-network
+
+networks:
+  stock-network:
+    name: stock-network
+    driver: bridge
+
+volumes:
+  postgres_data:
