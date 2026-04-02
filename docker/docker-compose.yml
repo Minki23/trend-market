@@ -1,4 +1,5 @@
 services:
+  # Główna baza danych
   postgres:
     image: postgres:16
     container_name: stock-postgres
@@ -18,7 +19,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - stock-network
-
+  # Backup pzrechowujący kopię głównego postgresa kopiując co 24 godziny
   postgres-backup:
     image: postgres:16
     container_name: stock-postgres-backup
@@ -37,7 +38,7 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     networks:
       - stock-network
-
+  # Serwis pobierający dane ze wszystkich źródeł
   data-collection-service:
     build: ../services/DataCollectionService
     container_name: data-collection-service
@@ -46,7 +47,7 @@ services:
       - "${PORT}"
     depends_on:
       postgres:
-       condition: service_healthy
+        condition: service_healthy
     environment:
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
@@ -55,7 +56,7 @@ services:
       DB_NAME: ${DB_NAME}
     networks:
       - stock-network
-
+  # Seić wspólna do wszystkich serwisów
 networks:
   stock-network:
     name: stock-network
