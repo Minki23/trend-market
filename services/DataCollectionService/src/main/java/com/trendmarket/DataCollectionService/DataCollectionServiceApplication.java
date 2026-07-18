@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DataCollectionServiceApplication {
 
 	public static void main(String[] args) {
+
 		SpringApplication.run(DataCollectionServiceApplication.class, args);
 	}
 

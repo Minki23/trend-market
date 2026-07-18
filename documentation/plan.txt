@@ -1,0 +1,9 @@
+DataCollectionService
+ProcessingService
+ModelService
+GradingService
+KeywordsService
+RESTAPIService
+Frontend
+Database
+Broker (RabbitMQ)

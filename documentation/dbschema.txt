@@ -1,0 +1,118 @@
+Stocks(
+    stock_id PK,
+    ticker,
+    name,
+    sector,
+    market
+)
+StockPrices(
+    price_id PK,
+    stock_id FK,
+    datetime,
+    open,
+    high,
+    low,
+    close,
+    volume
+)
+TechnicalIndicators(
+    indicator_id PK,
+    stock_id FK,
+    datetime,
+    sma_5,
+    sma_10,
+    sma_20,
+    sma_50,
+    ema_12,
+    ema_26,
+    rsi,
+    macd,
+    macd_signal,
+    macd_hist,
+    stochastic_k,
+    stochastic_d,
+    roc,
+    bollinger_upper,
+    bollinger_lower,
+    bollinger_width,
+    atr,
+    obv
+)
+Trends(
+    trend_id PK,
+    stock_id FK,
+    keyword_id FK,
+    datetime,
+    trend_value
+)
+Keywords(
+    keyword_id PK,
+    stock_id FK,
+    keyword,
+    source,
+    created_at
+)
+KeywordScores(
+    score_id PK,
+    keyword_id FK,
+    datetime,
+    correlation_7d,
+    correlation_30d,
+    lag_3_corr,
+    lag_7_corr,
+    sentiment_score,
+    final_score
+)
+Features(
+    feature_id PK,
+    stock_id FK,
+    datetime,
+
+    return_1d,
+    return_7d,
+    volatility_7d,
+
+    rsi,
+    macd,
+    macd_hist,
+    sma_20_diff,
+    ema_diff,
+    bollinger_width,
+    atr,
+    obv,
+
+    trend_value,
+    trend_change,
+    trend_lag_3,
+    trend_lag_7,
+
+    keyword_score,
+
+    sp500_return,
+    nasdaq_return,
+    vix,
+
+    target_price_up,
+    target_return_5d
+)
+Predictions(
+    prediction_id PK,
+    stock_id FK,
+    datetime,
+    predicted_price,
+    predicted_return,
+    predicted_direction,
+    confidence,
+    model_id
+)
+Models(
+    model_id PK,
+    name,
+    version,
+    algorithm,
+    features_used,
+    created_at,
+    accuracy,
+    mse,
+    mae
+)
