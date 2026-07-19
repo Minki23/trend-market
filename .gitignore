@@ -28,5 +28,13 @@ target/
 # OS
 .DS_Store
 
-#Documentation
-documentation
+test/_pycache__/
+test/Lib
+test/Include
+test/share
+test/Scripts
+test/stock_history_csv
+test/pyvenv.cfg
+test/*.csv
+test/*.json
+test/*.pdf

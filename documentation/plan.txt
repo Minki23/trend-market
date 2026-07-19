@@ -7,3 +7,6 @@ RESTAPIService
 Frontend
 Database
 Broker (RabbitMQ)
+
+https://adanos.org/ticker-database/#ticker-database-directory
+yfinance
