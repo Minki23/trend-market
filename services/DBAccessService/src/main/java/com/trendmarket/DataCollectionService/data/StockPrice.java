@@ -1,42 +1,39 @@
 package com.trendmarket.DataCollectionService.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 import jakarta.persistence.*;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
-@Data
-@Builder
+@Table(name = "stock_prices")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class StockPrice {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long prince_id;
+    private Long priceId;
 
-    @ManyToOne
-    @JoinColumn(name="stock_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;
 
     @Column(nullable = false)
-    private Date datetime;
+    private LocalDateTime timestamp;
 
-    @Column(nullable = false)
-    private double open;
+    private Double open;
 
-    @Column(nullable = false)
-    private double close;
+    private Double high;
 
-    @Column(nullable = false)
-    private double high;
+    private Double low;
 
-    @Column(nullable = false)
-    private double low;
+    private Double close;
 
-    @Column(nullable = false)
-    private double volume;
+    private Long volume;
+
+    private Double adjustedClose;
 }

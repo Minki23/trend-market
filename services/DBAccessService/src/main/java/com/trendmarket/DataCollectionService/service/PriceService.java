@@ -11,4 +11,8 @@ public class PriceService {
     public PriceService(PriceRepository repository){
         this.repository = repository;
     }
+
+    public void processMessage(String payload) {
+        //TODO
+    }
 }

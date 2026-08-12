@@ -1,14 +1,14 @@
 import paho.mqtt.subscribe as subscribe
-import yfinance as yf
 
-def on_message_print(client, userdata, message):
-    print(yf.Ticker(message.payload.decode("utf-8")).history(period='1mo'))
-
-subscribe.callback(
-    on_message_print,
-    "data",
-    hostname="localhost",
-    port=1883,
-    userdata={"message_count": 0}
-
-)
+class YfinanceSubscriber:
+    def __init__(self, broker_address="tcp://localhost", broker_port=1883):
+        self.broker_address = broker_address
+        self.broker_port = broker_port
+    
+    def subscribe(self, topic, function):
+        subscribe.callback(
+            function,
+            topic,
+            hostname=self.broker_address,
+            port=self.broker_port
+        )

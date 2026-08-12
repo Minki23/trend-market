@@ -1,11 +1,13 @@
 package com.trendmarket.DataCollectionService.controller;
 
 import com.trendmarket.DataCollectionService.data.Stock;
+import com.trendmarket.DataCollectionService.dto.StockDTO;
 import com.trendmarket.DataCollectionService.service.StockService;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -21,7 +23,7 @@ public class StockController {
     }
 
     @PostMapping
-    public Stock createStock(@RequestBody Stock body) {
+    public Stock createStock(@RequestBody StockDTO body) {
         return stockService.createStock(body);
     }
     @GetMapping
@@ -35,9 +37,19 @@ public class StockController {
         return response;
     }
 
-    @GetMapping("/create")
+    @GetMapping("/getAll")
     public List<Stock> getAllStocks(){
         return stockService.getAll();
+    }
+
+    @GetMapping("/getAllNames")
+    public Map<String,String> getAllStockNames(){
+        return stockService.getAllNames();
+    }
+
+    @GetMapping("/getAllNamesDifferentThanTicker")
+    public Map<String,String> getAllStockNamesDifferentThanTicker(){
+        return stockService.getAllNamesDifferentThanTicker();
     }
 
     @DeleteMapping("/clear")
@@ -46,7 +58,12 @@ public class StockController {
     }
 
     @PostMapping("/fetch")
-    public void fetchFromWebsite(@RequestParam String ticker){
+    public void fetchFromApi(@RequestParam String ticker){
         stockService.fetchFromService(ticker);
+    }
+
+    @PostMapping("/all")
+    public void fetchAllFromApi(){
+        stockService.fetchAllFromApi();
     }
 }
