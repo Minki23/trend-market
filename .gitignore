@@ -38,3 +38,11 @@ test/pyvenv.cfg
 test/*.csv
 test/*.json
 test/*.pdf
+test/data_test.py
+
+services/YfinanceService/data
+services/YfinanceService/Include
+services/YfinanceService/Lib
+services/YfinanceService/Scripts
+services/YfinanceService/pyvenv.cfg
+services/YfinanceService/main.py
