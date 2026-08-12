@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="a3ddf378-79ac-4eff-a27f-8650f6e6b0e7" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../../mosquitto/config/mosquitto.conf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../mosquitto/data/mosquitto.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../docker/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../../docker/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/.gitattributes" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/build.gradle" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/gradle/wrapper/gradle-wrapper.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/gradlew" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/gradlew.bat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/settings.gradle" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/main/java/com/trendmarket/DataCollectionService/DataCollectionServiceApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/main/java/com/trendmarket/DataCollectionService/TestController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/main/java/com/trendmarket/DataCollectionService/controller/StockController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/main/java/com/trendmarket/DataCollectionService/data/Stock.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/main/java/com/trendmarket/DataCollectionService/repository/StockRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/main/java/com/trendmarket/DataCollectionService/service/StockService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/main/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/test/java/com/trendmarket/DataCollectionService/DataCollectionServiceApplicationTests.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DataCollectionService/src/test/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../test/data_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../test/data_test.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+        <option value="Interface" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="3BciPlh5ZjLZb9XK3SRQqGzPov4" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.Build DataCollectionService.executor": "Run",
+    "Gradle.DataCollectionService [:com.trendmarket.DataCollectionService.DataCollectionServiceApplication.main()].executor": "Run",
+    "Gradle.DataCollectionService [dependencies].executor": "Run",
+    "Gradle.Download Sources.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/Michal/Documents/trend-market/services/DBAcessService",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
+  }
+}]]></component>
+  <component name="RunManager" selected="Application.DataCollectionService">
+    <configuration name="DataCollectionService" type="Application" factoryName="Application">
+      <option name="ALTERNATIVE_JRE_PATH" value="21" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+      <envs>
+        <env name="ENV" value="&quot;env&quot;" />
+      </envs>
+      <option name="MAIN_CLASS_NAME" value="com.trendmarket.DataCollectionService.DataCollectionServiceApplication" />
+      <module name="DataCollectionService.main" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="DataCollectionService [dependencies]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="dependencies" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Gradle.DataCollectionService [dependencies]" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a3ddf378-79ac-4eff-a27f-8650f6e6b0e7" name="Changes" comment="" />
+      <created>1774794737873</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774794737873</updated>
+    </task>
+    <servers />
+  </component>
+</project>
