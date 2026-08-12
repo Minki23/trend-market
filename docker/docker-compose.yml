@@ -1,4 +1,18 @@
 services:
+  #Broker MQTT
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: stock-mosquitto
+    restart: always
+    ports:
+      - "${MQTT_PORT}:1883"
+      - "9001:9001"  # WebSocket port
+    volumes:
+      - ../mosquitto/config:/mosquitto/config
+      - ../mosquitto/data:/mosquitto/data
+      - ../mosquitto/log:/mosquitto/log
+    networks:
+      - stock-network
   # Główna baza danych
   postgres:
     image: postgres:16
@@ -40,8 +54,8 @@ services:
       - stock-network
   # Serwis pobierający dane ze wszystkich źródeł
   data-collection-service:
-    build: ../services/DataCollectionService
-    container_name: data-collection-service
+    build: ../services/DBAccessService
+    container_name: db-access-service
     restart: always
     ports:
       - "${PORT}"
