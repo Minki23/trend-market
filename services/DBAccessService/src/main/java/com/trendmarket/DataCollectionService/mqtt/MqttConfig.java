@@ -39,7 +39,8 @@ public class MqttConfig {
                 new MqttPahoMessageDrivenChannelAdapter(
                         BROKER_URL,
                         "DataCollectionService-in",
-                        "stock"
+                        "stock",
+                        "price"
                 );
 
         adapter.setCompletionTimeout(5000);

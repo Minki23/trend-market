@@ -62,7 +62,7 @@ public class StockController {
         stockService.fetchFromService(ticker);
     }
 
-    @PostMapping("/all")
+    @PostMapping("/fetchAll")
     public void fetchAllFromApi(){
         stockService.fetchAllFromApi();
     }

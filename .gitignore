@@ -40,7 +40,6 @@ test/*.json
 test/*.pdf
 test/data_test.py
 
-mosquitto/data/mosquitto.db
 mosquitto/log
 
 services/YfinanceService/data
@@ -50,3 +49,5 @@ services/YfinanceService/Scripts
 services/YfinanceService/pyvenv.cfg
 services/YfinanceService/main.py
 
+mosquitto/*
+mosquitto/data/mosquitto.db

@@ -22,8 +22,14 @@ public class StockPrice {
     @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;
 
-    @Column(nullable = false)
+    @Column(name = "datetime", nullable = false)
+    private LocalDateTime dateTime;
+
+    @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
+
+    @Column(name = "date_time", nullable = false)
+    private LocalDateTime legacyDateTime;
 
     private Double open;
 
