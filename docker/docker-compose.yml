@@ -70,6 +70,14 @@ services:
       DB_NAME: ${DB_NAME}
     networks:
       - stock-network
+  y-finance-service:
+    build: ../services/YfinanceService
+    container_name: yfinance-service
+    restart: always
+    ports:
+      - "${YFINANCE_PORT}"
+    depends_on:
+      - mosquitto
   # Seić wspólna do wszystkich serwisów
 networks:
   stock-network:
