@@ -1,5 +1,6 @@
 package com.trendmarket.DataCollectionService.mqtt;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.trendmarket.DataCollectionService.dto.PriceDTO;
 import com.trendmarket.DataCollectionService.dto.StockDTO;
 import com.trendmarket.DataCollectionService.service.PriceService;
@@ -7,10 +8,11 @@ import com.trendmarket.DataCollectionService.service.StockService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class MqttMessageHandler {
@@ -44,10 +46,13 @@ public class MqttMessageHandler {
             }
 
             if (MqttTopics.PRICE.equals(topic)) {
-                System.out.println("Received price");
-                PriceDTO priceDTO =
-                        mapper.readValue(payload, PriceDTO.class);
-                priceService.createPrice(priceDTO);
+                List<PriceDTO> pricesList =
+                        mapper.readValue(
+                                payload,
+                                new TypeReference<>() {
+                                }
+                        );
+                priceService.createPrices(pricesList);
             }
 
         } catch (JsonProcessingException e) {

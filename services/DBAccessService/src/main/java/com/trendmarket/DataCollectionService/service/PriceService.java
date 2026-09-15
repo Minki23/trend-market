@@ -10,13 +10,10 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
+import java.util.*;
 import java.util.logging.Logger;
 
 @Service
@@ -102,5 +99,17 @@ public class PriceService {
                 .build();
 
         return priceRepository.save(price);
+    }
+
+    public void createPrices(List<PriceDTO> pricesDTOList) {
+        List<StockPrice> priceList = new ArrayList<>();
+        for(PriceDTO price : pricesDTOList){
+            priceList.add(this.createPrice(price));
+        }
+        priceRepository.saveAllAndFlush(priceList);
+    }
+
+    public Optional<List<StockPrice>> fetchPricesId(Long stockId) {
+        return priceRepository.findByStock_StockId(stockId);
     }
 }
