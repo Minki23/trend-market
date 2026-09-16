@@ -1,7 +1,9 @@
 package com.trendmarket.DataCollectionService.controller;
 
 import com.trendmarket.DataCollectionService.data.Stock;
+import com.trendmarket.DataCollectionService.data.StockPrice;
 import com.trendmarket.DataCollectionService.dto.StockDTO;
+import com.trendmarket.DataCollectionService.service.PriceService;
 import com.trendmarket.DataCollectionService.service.StockService;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.web.bind.annotation.*;
@@ -11,59 +13,64 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/stock")
+@RequestMapping("/stocks")
 public class StockController {
 
     private final StockService stockService;
+    private final PriceService priceService;
 
     public StockController(
-            StockService stockService
+            StockService stockService,
+            PriceService priceService
     ) {
         this.stockService = stockService;
+        this.priceService = priceService;
     }
 
     @PostMapping
     public Stock createStock(@RequestBody StockDTO body) {
         return stockService.createStock(body);
     }
-    @GetMapping
-    public String hello(){
-        return "Controller functions";
-    }
 
-    @RequestMapping("/find")
-    public Optional<Stock> fetchByTicker(@RequestParam String ticker){
+    @RequestMapping("/{StockId}")
+    public Optional<Stock> fetchByTicker(@PathVariable String ticker){
         Optional<Stock> response = stockService.getByTicker(ticker);
         return response;
     }
 
-    @GetMapping("/getAll")
+    @GetMapping
     public List<Stock> getAllStocks(){
         return stockService.getAll();
     }
 
-    @GetMapping("/getAllNames")
+    @GetMapping("/names")
     public Map<String,String> getAllStockNames(){
         return stockService.getAllNames();
     }
 
-    @GetMapping("/getAllNamesDifferentThanTicker")
-    public Map<String,String> getAllStockNamesDifferentThanTicker(){
-        return stockService.getAllNamesDifferentThanTicker();
-    }
-
-    @DeleteMapping("/clear")
+    @DeleteMapping
     public void removeAllStocks(){
         stockService.removeAll();
     }
 
-    @PostMapping("/fetch")
-    public void fetchFromApi(@RequestParam String ticker){
+    @PostMapping("/{ticker}")
+    public void fetchFromApi(@PathVariable String ticker){
         stockService.fetchFromService(ticker);
     }
 
-    @PostMapping("/fetchAll")
+    @PostMapping
     public void fetchAllFromApi(){
         stockService.fetchAllFromApi();
+    }
+
+    @PostMapping("/prices")
+    public void fetchAllPrices(){
+        priceService.fetchAllPrices();
+    }
+
+    @GetMapping("/prices/{stockId}")
+    public Optional<List<StockPrice>> getAllofTicker(@PathVariable Long stockId){
+
+        return priceService.fetchPricesId(stockId);
     }
 }

@@ -120,16 +120,6 @@ public class StockService {
                 .collect(Collectors.toMap(Stock::getTicker, Stock::getName));
     }
 
-    public Map<String, String> getAllNamesDifferentThanTicker() {
-        return stockRepository
-                .findAll()
-                .stream()
-                .filter(stock ->
-                    !stock.getName().equals(stock.getTicker())
-                )
-                .collect(Collectors.toMap(Stock::getTicker, Stock::getName));
-    }
-
     public void fetchAllFromApi() {
         mqttOutboundChanel.send(
                 MessageBuilder.withPayload("aye yo download the data").build()
