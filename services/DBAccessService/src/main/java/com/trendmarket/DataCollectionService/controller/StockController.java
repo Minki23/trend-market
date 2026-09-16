@@ -32,7 +32,7 @@ public class StockController {
         return stockService.createStock(body);
     }
 
-    @RequestMapping("/{StockId}")
+    @GetMapping("/{StockId}")
     public Optional<Stock> fetchByTicker(@PathVariable String ticker){
         Optional<Stock> response = stockService.getByTicker(ticker);
         return response;
@@ -53,12 +53,12 @@ public class StockController {
         stockService.removeAll();
     }
 
-    @PostMapping("/{ticker}")
+    @GetMapping("/{ticker}")
     public void fetchFromApi(@PathVariable String ticker){
         stockService.fetchFromService(ticker);
     }
 
-    @PostMapping
+    @PostMapping("/fetch")
     public void fetchAllFromApi(){
         stockService.fetchAllFromApi();
     }
