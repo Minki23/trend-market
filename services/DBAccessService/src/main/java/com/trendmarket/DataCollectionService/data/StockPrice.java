@@ -6,8 +6,16 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "stock_prices")
 @Getter
+@Table(
+        name = "stock_prices",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "stock_price_stock_datetime",
+                        columnNames = {"stock_id", "datetime"}
+                )
+        }
+)
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor

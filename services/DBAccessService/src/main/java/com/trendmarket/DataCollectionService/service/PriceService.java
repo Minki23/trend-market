@@ -92,6 +92,25 @@ public class PriceService {
 
         for (PriceDTO price : pricesDTOList) {
             StockPrice stockPrice = this.createPrice(price);
+
+            if (stockPrice.getClose() == null) {
+                continue;
+            }
+
+            if (priceRepository.existsByStockAndDateTime(
+                    stockPrice.getStock(),
+                    stockPrice.getDateTime())) {
+
+                System.out.println(
+                        "Skipping existing price: "
+                                + stockPrice.getStock().getTicker()
+                                + " / "
+                                + stockPrice.getDateTime()
+                );
+
+                continue;
+            }
+
             priceList.add(stockPrice);
         }
 
