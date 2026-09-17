@@ -119,4 +119,8 @@ public class PriceService {
     public Optional<List<StockPrice>> fetchPricesId(Long stockId) {
         return priceRepository.findByStock_StockId(stockId);
     }
+
+    public void clearPrices() {
+        priceRepository.deleteAllInBatch();
+    }
 }

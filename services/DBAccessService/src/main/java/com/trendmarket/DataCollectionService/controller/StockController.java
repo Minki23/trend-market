@@ -73,4 +73,9 @@ public class StockController {
 
         return priceService.fetchPricesId(stockId);
     }
+
+    @DeleteMapping("/prices/clear")
+    public void clearPricesData(){
+        priceService.clearPrices();
+    }
 }
