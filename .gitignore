@@ -51,3 +51,4 @@ services/YfinanceService/main.py
 
 mosquitto/*
 mosquitto/data/mosquitto.db
+test/pricetest.py

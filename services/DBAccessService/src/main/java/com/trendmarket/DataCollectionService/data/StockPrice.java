@@ -42,4 +42,21 @@ public class StockPrice {
     private Long volume;
 
     private Double adjustedClose;
+
+    @Override
+    public String toString() {
+        return "StockPrice{" +
+                "priceId=" + priceId +
+                ", stock=" + stock +
+                ", dateTime=" + dateTime +
+                ", timestamp=" + timestamp +
+                ", legacyDateTime=" + legacyDateTime +
+                ", open=" + open +
+                ", high=" + high +
+                ", low=" + low +
+                ", close=" + close +
+                ", volume=" + volume +
+                ", adjustedClose=" + adjustedClose +
+                '}';
+    }
 }

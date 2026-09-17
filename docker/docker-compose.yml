@@ -74,10 +74,10 @@ services:
     build: ../services/YfinanceService
     container_name: yfinance-service
     restart: always
-    ports:
-      - "${YFINANCE_PORT}"
     depends_on:
       - mosquitto
+    networks:
+      - stock-network
   # Seić wspólna do wszystkich serwisów
 networks:
   stock-network:

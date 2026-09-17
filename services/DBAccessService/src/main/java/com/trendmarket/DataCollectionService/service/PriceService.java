@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -25,6 +26,7 @@ public class PriceService {
     private final ObjectMapper objectMapper;
     private final StockRepository stockRepository;
     private final Logger logger = Logger.getLogger(PriceService.class.getName());
+    private final Map<String, Stock> alreadyFound = new HashMap<>();
 
     public PriceService(
             StockService stockService,
@@ -41,25 +43,17 @@ public class PriceService {
         this.stockRepository = stockRepository;
     }
 
-    public void handleReceivePrice(){
-
-    }
-
-    public void processMessage(String payload) {
-        //TODO
-    }
-
     public void fetchAllPrices() {
         Map<String, String> stockNames = stockService.getAllNames();
         Set<String> tickers = stockNames.keySet();
-        String payload = "";
+        String payload;
         try {
             payload = objectMapper.writeValueAsString(tickers);
         }
         catch (Exception e){
-            System.out.println(e);
+            throw new RuntimeException("Couldn't map the payload");
         }
-        System.out.println("received call, asking my man");
+        System.out.println("received call, pulling prices...");
         mqttOutboundChannel.send(
                 MessageBuilder
                         .withPayload(payload)
@@ -70,10 +64,15 @@ public class PriceService {
 
     public StockPrice createPrice(PriceDTO dto) {
         Stock stock;
+
         var priceDateTime = dto.getDatetime();
 
         if (priceDateTime == null) {
             throw new RuntimeException("Missing required datetime value");
+        }
+        if(alreadyFound.containsKey(dto.getTicker())) {
+            stock = alreadyFound.get(dto.getTicker());
+            return dtoToPrice(dto, stock, priceDateTime);
         }
 
         if (dto.getTicker() != null && !dto.getTicker().isBlank()) {
@@ -81,15 +80,33 @@ public class PriceService {
                 .orElseThrow(() ->
                     new RuntimeException("Stock not found by ticker: " + dto.getTicker())
                 );
+            alreadyFound.put(dto.getTicker(), stock);
         } else {
             throw new RuntimeException("Missing stock identifier: stockId or stock.ticker is required");
         }
+        return dtoToPrice(dto, stock, priceDateTime);
+    }
 
-        StockPrice price = StockPrice.builder()
+    public void createPrices(List<PriceDTO> pricesDTOList) {
+        List<StockPrice> priceList = new ArrayList<>();
+
+        for (PriceDTO price : pricesDTOList) {
+            StockPrice stockPrice = this.createPrice(price);
+            priceList.add(stockPrice);
+        }
+
+        priceRepository.saveAllAndFlush(priceList);
+
+        System.out.println("Prices saved!");
+    }
+
+    public StockPrice dtoToPrice(PriceDTO dto, Stock stock, LocalDateTime priceDateTime){
+
+        return StockPrice.builder()
                 .stock(stock)
-            .dateTime(priceDateTime)
-            .timestamp(priceDateTime)
-            .legacyDateTime(priceDateTime)
+                .dateTime(priceDateTime)
+                .timestamp(priceDateTime)
+                .legacyDateTime(priceDateTime)
                 .open(dto.getOpen())
                 .high(dto.getHigh())
                 .low(dto.getLow())
@@ -97,16 +114,6 @@ public class PriceService {
                 .volume(dto.getVolume())
                 .adjustedClose(dto.getAdjustedClose())
                 .build();
-
-        return priceRepository.save(price);
-    }
-
-    public void createPrices(List<PriceDTO> pricesDTOList) {
-        List<StockPrice> priceList = new ArrayList<>();
-        for(PriceDTO price : pricesDTOList){
-            priceList.add(this.createPrice(price));
-        }
-        priceRepository.saveAllAndFlush(priceList);
     }
 
     public Optional<List<StockPrice>> fetchPricesId(Long stockId) {
