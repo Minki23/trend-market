@@ -14,11 +14,13 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Service
 public class PriceService {
@@ -92,24 +94,33 @@ public class PriceService {
 
     public void createPrices(List<PriceDTO> pricesDTOList) {
         List<StockPrice> priceList = new ArrayList<>();
+        Map<String, LocalDateTime> latestDates = new HashMap<>();
         for (PriceDTO price : pricesDTOList) {
             StockPrice stockPrice = this.createPrice(price);
 
+            String ticker = stockPrice.getStock().getTicker();
+
             if (stockPrice.getClose() == null) {
+                System.out.println("Record without close value:" + stockPrice);
                 continue;
             }
 
-            if (priceRepository.existsByStockAndDateTime(
-                    stockPrice.getStock(),
-                    stockPrice.getDateTime())) {
+            LocalDateTime latestDate = latestDates.computeIfAbsent(
+                    ticker,
+                    t -> {
+                        final LocalDateTime DEFAULT_DATE = LocalDateTime.of(1900,1,1,0,0);
+                        LocalDateTime lastDate = priceRepository.findTopByStockOrderByDateTimeDesc(stockPrice.getStock())
+                                .map(StockPrice::getDateTime)
+                                .orElse(DEFAULT_DATE);
+                        if(lastDate.equals(DEFAULT_DATE))
+                            System.out.println("No previous records found");
+                        else
+                            System.out.println("Latest current record for: "+ ticker +" is: "+lastDate);
+                       return lastDate;
+                    }
+            );
 
-                System.out.println(
-                        "Skipping existing price: "
-                                + stockPrice.getStock().getTicker()
-                                + " / "
-                                + stockPrice.getDateTime()
-                );
-
+            if (!stockPrice.getDateTime().isAfter(latestDate)) {
                 continue;
             }
 
@@ -117,14 +128,22 @@ public class PriceService {
         }
         try {
             priceRepository.saveAllAndFlush(priceList);
+            Map<String, List<Stock>> tickers = priceList
+                    .stream()
+                    .map(StockPrice::getStock)
+                    .collect(Collectors.groupingBy(Stock::getTicker));
+            if(tickers.isEmpty()){
+                System.out.println("All of the records already exists");
+            }
+            else{
+                System.out.println("Saved " + priceList.size() + " records for " + tickers.keySet());
+            }
         }catch (MessageDeliveryException e){
             logger.log(new LogRecord(
                     Level.ALL, "Failed to insert record" + e
                 )
             );
         }
-
-        System.out.println("Prices saved!");
     }
 
     public StockPrice dtoToPrice(PriceDTO dto, Stock stock, LocalDateTime priceDateTime){
@@ -149,5 +168,9 @@ public class PriceService {
 
     public void clearPrices() {
         priceRepository.deleteAllInBatch();
+    }
+
+    public List<StockPrice> getAllPrices() {
+        return priceRepository.findAll();
     }
 }

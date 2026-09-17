@@ -16,19 +16,11 @@ public class Stock {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long stockId;
 
-    // =========================
-    // Basic identification
-    // =========================
-
     @Column(nullable = false, unique = true)
     private String ticker;
 
     @Column(nullable = false)
     private String name;
-
-    // =========================
-    // Classification
-    // =========================
 
     private String sector;
 
@@ -42,10 +34,6 @@ public class Stock {
 
     private String quoteType;
 
-    // =========================
-    // Location
-    // =========================
-
     private String address1;
 
     private String city;
@@ -57,10 +45,6 @@ public class Stock {
     private String country;
 
     private String region;
-
-    // =========================
-    // Trading / exchange
-    // =========================
 
     private String currency;
 
@@ -74,10 +58,6 @@ public class Stock {
 
     private String exchangeTimezoneShortName;
 
-    // =========================
-    // Company information
-    // =========================
-
     private String website;
 
     private String irWebsite;
@@ -89,10 +69,6 @@ public class Stock {
     @Column(columnDefinition = "TEXT")
     private String longBusinessSummary;
 
-    // =========================
-    // Other
-    // =========================
-
     private String messageBoardId;
 
     private String language;
@@ -100,10 +76,6 @@ public class Stock {
     private String typeDisp;
 
     private String quoteSourceName;
-
-    // =========================
-    // Constructor
-    // =========================
 
     public Stock(
             String ticker,
@@ -115,5 +87,17 @@ public class Stock {
         this.name = name;
         this.sector = sector;
         this.market = market;
+    }
+
+    @Override
+    public String toString() {
+        return "Stock{" +
+                "stockId=" + stockId +
+                ", ticker='" + ticker + '\'' +
+                ", name='" + name + '\'' +
+                ", sector='" + sector + '\'' +
+                ", industry='" + industry + '\'' +
+                ", market='" + market + '\'' +
+                '}';
     }
 }

@@ -14,4 +14,5 @@ public interface PriceRepository extends JpaRepository<StockPrice, Long> {
     
     Optional<List<StockPrice>> findByStock_StockId(Long StockId);
     boolean existsByStockAndDateTime(Stock stock, LocalDateTime dateTime);
+    Optional<StockPrice> findTopByStockOrderByDateTimeDesc(Stock stock);
 }
