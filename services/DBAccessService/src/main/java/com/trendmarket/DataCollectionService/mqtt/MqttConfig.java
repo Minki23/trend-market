@@ -60,19 +60,11 @@ public class MqttConfig {
             MqttMessageHandler handler) {
 
         return message -> {
-            System.out.println(
-                    "========== MQTT MESSAGE RECEIVED =========="
-            );
-
-            System.out.println("Message: " + message);
 
             String topic = message.getHeaders()
                     .get("mqtt_receivedTopic", String.class);
 
             String payload = message.getPayload().toString();
-
-            System.out.println("Topic: " + topic);
-            System.out.println("Payload: " + payload);
 
             handler.handle(topic, payload);
         };

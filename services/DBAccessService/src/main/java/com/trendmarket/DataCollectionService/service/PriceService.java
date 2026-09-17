@@ -11,10 +11,13 @@ import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 @Service
@@ -89,7 +92,6 @@ public class PriceService {
 
     public void createPrices(List<PriceDTO> pricesDTOList) {
         List<StockPrice> priceList = new ArrayList<>();
-
         for (PriceDTO price : pricesDTOList) {
             StockPrice stockPrice = this.createPrice(price);
 
@@ -113,8 +115,14 @@ public class PriceService {
 
             priceList.add(stockPrice);
         }
-
-        priceRepository.saveAllAndFlush(priceList);
+        try {
+            priceRepository.saveAllAndFlush(priceList);
+        }catch (MessageDeliveryException e){
+            logger.log(new LogRecord(
+                    Level.ALL, "Failed to insert record" + e
+                )
+            );
+        }
 
         System.out.println("Prices saved!");
     }
