@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -36,8 +37,6 @@ public class MqttMessageHandler {
     }
 
     public void handle(String topic, String payload) {
-        System.out.println("received message "+ topic);
-
         try {
             if (MqttTopics.STOCK.equals(topic)) {
                 StockDTO stockDTO =
@@ -46,6 +45,7 @@ public class MqttMessageHandler {
             }
 
             if (MqttTopics.PRICE.equals(topic)) {
+
                 List<PriceDTO> pricesList =
                         mapper.readValue(
                                 payload,

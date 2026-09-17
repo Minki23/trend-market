@@ -68,6 +68,11 @@ public class StockController {
         priceService.fetchAllPrices();
     }
 
+    @GetMapping("/prices")
+    public List<StockPrice> getAll(){
+        return priceService.getAllPrices();
+    }
+
     @GetMapping("/prices/{stockId}")
     public Optional<List<StockPrice>> getAllofTicker(@PathVariable Long stockId){
 
