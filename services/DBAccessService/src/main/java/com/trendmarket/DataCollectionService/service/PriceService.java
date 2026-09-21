@@ -14,7 +14,6 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Level;
@@ -48,8 +47,8 @@ public class PriceService {
         this.stockRepository = stockRepository;
     }
 
-    public void fetchAllPrices() {
-        Map<String, String> stockNames = stockService.getAllNames();
+    public void pullPricesFromAPI() {
+        Map<String, String> stockNames = stockService.getAllNamesFromDatabase();
         Set<String> tickers = stockNames.keySet();
         String payload;
         try {
@@ -67,7 +66,7 @@ public class PriceService {
         );
     }
 
-    public StockPrice createPrice(PriceDTO dto) {
+    public StockPrice preparePriceDTO(PriceDTO dto) {
         Stock stock;
 
         LocalDateTime priceDateTime = dto.getDatetime();
@@ -95,11 +94,11 @@ public class PriceService {
         return dtoToPrice(dto, stock, priceDateTime, dayOfTheWeek);
     }
 
-    public void createPrices(List<PriceDTO> pricesDTOList) {
+    public void pushPricesToDatabase(List<PriceDTO> pricesDTOList) {
         List<StockPrice> priceList = new ArrayList<>();
         Map<String, LocalDateTime> latestDates = new HashMap<>();
         for (PriceDTO price : pricesDTOList) {
-            StockPrice stockPrice = this.createPrice(price);
+            StockPrice stockPrice = this.preparePriceDTO(price);
 
             String ticker = stockPrice.getStock().getTicker();
 
@@ -164,15 +163,15 @@ public class PriceService {
                 .build();
     }
 
-    public Optional<List<StockPrice>> fetchPricesId(Long stockId) {
+    public Optional<List<StockPrice>> fetchPricesById(Long stockId) {
         return priceRepository.findByStock_StockId(stockId);
     }
 
-    public void clearPrices() {
+    public void clearPricesTable() {
         priceRepository.deleteAllInBatch();
     }
 
-    public List<StockPrice> getAllPrices() {
+    public List<StockPrice> fetchAllPricesFromDatabase() {
         return priceRepository.findAll();
     }
 }

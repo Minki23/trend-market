@@ -28,33 +28,33 @@ public class StockController {
 
     @PostMapping
     public Stock createStock(@RequestBody StockDTO body) {
-        return stockService.createStock(body);
+        return stockService.saveDTOToDatabase(body);
     }
 
     @GetMapping("/{StockId}")
     public Optional<Stock> fetchByTicker(@PathVariable String ticker){
-        Optional<Stock> response = stockService.getByTicker(ticker);
+        Optional<Stock> response = stockService.fetchByTickerFromDatabase(ticker);
         return response;
     }
 
     @GetMapping
     public List<Stock> getAllStocks(){
-        return stockService.getAll();
+        return stockService.fetchAllFromDatabase();
     }
 
     @GetMapping("/names")
     public Map<String,String> getAllStockNames(){
-        return stockService.getAllNames();
+        return stockService.getAllNamesFromDatabase();
     }
 
     @DeleteMapping
     public void removeAllStocks(){
-        stockService.removeAll();
+        stockService.clearStocksTable();
     }
 
     @GetMapping("/{ticker}")
     public void fetchFromApi(@PathVariable String ticker){
-        stockService.fetchFromService(ticker);
+        stockService.fetchByTickerFromAPI(ticker);
     }
 
     @PostMapping("/fetch")

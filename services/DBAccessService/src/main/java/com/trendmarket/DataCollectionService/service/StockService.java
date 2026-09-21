@@ -9,7 +9,6 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,21 +34,22 @@ public class StockService {
         this.objectMapper = objectMapper;
     }
 
-    public Stock createStock(StockDTO dto) {
+    public Stock saveDTOToDatabase(StockDTO dto) {
 
         Optional<Stock> existingStock =
                 stockRepository.findByTicker(dto.getTicker());
 
-        Stock stock;
-
-        if (existingStock.isPresent()) {
+        if (existingStock.isPresent())
             return existingStock.get();
-        } else {
-            stock = new Stock();
-            stock.setTicker(dto.getTicker());
-        }
 
-        stock = Stock.builder()
+        Stock stock = dtoToStock(dto);
+        stock.setTicker(dto.getTicker());
+
+        return stockRepository.save(stock);
+    }
+
+    private static Stock dtoToStock(StockDTO dto){
+        return Stock.builder()
                 .ticker(dto.getTicker())
                 .name(dto.getName())
                 .tradeable(dto.isTradeable())
@@ -81,23 +81,21 @@ public class StockService {
                 .typeDisp(dto.getTypeDisp())
                 .quoteSourceName(dto.getQuoteSourceName())
                 .build();
-
-        return stockRepository.save(stock);
     }
 
-    public List<Stock> getAll(){
+    public List<Stock> fetchAllFromDatabase(){
         return stockRepository.findAll();
     }
 
-    public void removeAll(){
+    public void clearStocksTable(){
         stockRepository.deleteAll();
     }
 
-    public Optional<Stock> getByTicker(String ticker){
+    public Optional<Stock> fetchByTickerFromDatabase(String ticker){
         return stockRepository.findByTicker(ticker);
     }
 
-    public void fetchFromService(String ticker){
+    public void fetchByTickerFromAPI(String ticker){
         try {
             String json = objectMapper.writeValueAsString(ticker);
 
@@ -112,7 +110,7 @@ public class StockService {
         }
     }
 
-    public Map<String,String> getAllNames() {
+    public Map<String,String> getAllNamesFromDatabase() {
 
         return stockRepository
                 .findAll()
@@ -122,7 +120,7 @@ public class StockService {
 
     public void fetchAllFromApi() {
         mqttOutboundChanel.send(
-                MessageBuilder.withPayload("aye yo download the data").build()
+                MessageBuilder.withPayload("Download all stocks from API").build()
         );
     }
 }

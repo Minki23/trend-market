@@ -40,7 +40,7 @@ public class MqttMessageHandler {
             if (MqttTopics.STOCK.equals(topic)) {
                 StockDTO stockDTO =
                         mapper.readValue(payload, StockDTO.class);
-                stockService.createStock(stockDTO);
+                stockService.saveDTOToDatabase(stockDTO);
             }
 
             if (MqttTopics.PRICE.equals(topic)) {
