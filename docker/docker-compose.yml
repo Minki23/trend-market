@@ -76,6 +76,10 @@ services:
     restart: always
     depends_on:
       - mosquitto
+      - data-collection-service
+    environment:
+      DATABASE_API_URL: ${DATABASE_API_URL}
+      BATCH_SIZE: ${BATCH_SIZE}
     networks:
       - stock-network
   # Seić wspólna do wszystkich serwisów

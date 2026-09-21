@@ -28,6 +28,7 @@ target/
 # OS
 .DS_Store
 
+# Test
 test/_pycache__/
 test/Lib
 test/Include
@@ -47,7 +48,6 @@ services/YfinanceService/Include
 services/YfinanceService/Lib
 services/YfinanceService/Scripts
 services/YfinanceService/pyvenv.cfg
-services/YfinanceService/main.py
 
 mosquitto/*
 mosquitto/data/mosquitto.db
