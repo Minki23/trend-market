@@ -70,14 +70,17 @@ public class PriceService {
     public StockPrice createPrice(PriceDTO dto) {
         Stock stock;
 
-        var priceDateTime = dto.getDatetime();
+        LocalDateTime priceDateTime = dto.getDatetime();
 
         if (priceDateTime == null) {
             throw new RuntimeException("Missing required datetime value");
         }
+
+        int dayOfTheWeek = priceDateTime.getDayOfWeek().getValue();
+
         if(alreadyFound.containsKey(dto.getTicker())) {
             stock = alreadyFound.get(dto.getTicker());
-            return dtoToPrice(dto, stock, priceDateTime);
+            return dtoToPrice(dto, stock, priceDateTime, dayOfTheWeek);
         }
 
         if (dto.getTicker() != null && !dto.getTicker().isBlank()) {
@@ -89,7 +92,7 @@ public class PriceService {
         } else {
             throw new RuntimeException("Missing stock identifier: stockId or stock.ticker is required");
         }
-        return dtoToPrice(dto, stock, priceDateTime);
+        return dtoToPrice(dto, stock, priceDateTime, dayOfTheWeek);
     }
 
     public void createPrices(List<PriceDTO> pricesDTOList) {
@@ -146,13 +149,12 @@ public class PriceService {
         }
     }
 
-    public StockPrice dtoToPrice(PriceDTO dto, Stock stock, LocalDateTime priceDateTime){
+    public StockPrice dtoToPrice(PriceDTO dto, Stock stock, LocalDateTime priceDateTime, int dayOfTheWeek){
 
         return StockPrice.builder()
                 .stock(stock)
                 .dateTime(priceDateTime)
-                .timestamp(priceDateTime)
-                .legacyDateTime(priceDateTime)
+                .dayOfTheWeek(dayOfTheWeek)
                 .open(dto.getOpen())
                 .high(dto.getHigh())
                 .low(dto.getLow())

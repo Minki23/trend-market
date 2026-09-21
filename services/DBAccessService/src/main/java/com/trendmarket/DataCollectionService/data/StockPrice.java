@@ -33,11 +33,7 @@ public class StockPrice {
     @Column(name = "datetime", nullable = false)
     private LocalDateTime dateTime;
 
-    @Column(name = "timestamp", nullable = false)
-    private LocalDateTime timestamp;
-
-    @Column(name = "date_time", nullable = false)
-    private LocalDateTime legacyDateTime;
+    private int dayOfTheWeek;
 
     private Double open;
 
@@ -57,8 +53,7 @@ public class StockPrice {
                 "priceId=" + priceId +
                 ", stock=" + stock +
                 ", dateTime=" + dateTime +
-                ", timestamp=" + timestamp +
-                ", legacyDateTime=" + legacyDateTime +
+                ", dayOfTheWeek=" + dayOfTheWeek +
                 ", open=" + open +
                 ", high=" + high +
                 ", low=" + low +
