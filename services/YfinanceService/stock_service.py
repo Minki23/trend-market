@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from yfinance.exceptions import YFRateLimitError
 
@@ -25,11 +26,12 @@ def build_stock_payload(ticker, info):
 
 
 class StockService:
-    def __init__(self, yfinance_client, sender, exclusion_store, batch_size):
+    def __init__(self, yfinance_client, sender, exclusion_store, batch_size, max_workers):
         self.yfinance_client = yfinance_client
         self.sender = sender
         self.exclusion_store = exclusion_store
         self.batch_size = batch_size
+        self.max_workers = max_workers
 
     def _get_info(self, ticker):
         return self.yfinance_client.get_info(ticker)
@@ -38,40 +40,60 @@ class StockService:
         total = len(tickers)
         batches = (total + self.batch_size - 1) // self.batch_size
         logger.info("Starting stock pull for %d tickers in %d batches", total, batches)
+        loop = asyncio.get_running_loop()
         sent = 0
         skipped = 0
 
-        for start in range(0, total, self.batch_size):
-            batch_number = start // self.batch_size + 1
-            batch = tickers[start:start + self.batch_size]
-            logger.info("Starting stock batch %d/%d with %d tickers", batch_number, batches, len(batch))
-            payloads = []
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            for start in range(0, total, self.batch_size):
+                batch_number = start // self.batch_size + 1
+                batch = tickers[start:start + self.batch_size]
+                logger.info(
+                    "Starting stock batch %d/%d with %d tickers using %d workers",
+                    batch_number,
+                    batches,
+                    len(batch),
+                    self.max_workers,
+                )
+                tasks = [
+                    loop.run_in_executor(executor, self._get_info, ticker)
+                    for ticker in batch
+                ]
 
-            for ticker in batch:
                 try:
-                    info = await asyncio.to_thread(self._get_info, ticker)
+                    results = await asyncio.gather(*tasks)
                 except YFRateLimitError:
+                    for task in tasks:
+                        if not task.done():
+                            task.cancel()
+                    await asyncio.gather(*tasks, return_exceptions=True)
                     logger.warning(
-                        "Rate limit reached at ticker %s in batch %d/%d; stopping stock pull",
-                        ticker,
+                        "Rate limit reached in stock batch %d/%d; stopping stock pull",
                         batch_number,
                         batches,
                     )
                     return
 
-                if not info or not isinstance(info, dict):
-                    skipped += 1
-                    self.exclusion_store.add(ticker)
-                    logger.warning("Skipping %s: no usable stock info", ticker)
-                    continue
-                payloads.append(build_stock_payload(ticker, info))
+                payloads = []
+                for ticker, info in zip(batch, results):
+                    if not info or not isinstance(info, dict):
+                        skipped += 1
+                        self.exclusion_store.add(ticker)
+                        logger.warning("Skipping %s: no usable stock info", ticker)
+                        continue
+                    payloads.append(build_stock_payload(ticker, info))
 
-            if payloads:
-                await self.sender.send_message(
-                    "stock",
-                    json.dumps(payloads, ensure_ascii=False),
-                )
-                sent += len(payloads)
-                logger.info("Pushed stock batch %d/%d: %d stocks", batch_number, batches, len(payloads))
+                if payloads:
+                    await self.sender.send_message(
+                        "stock",
+                        json.dumps(payloads, ensure_ascii=False),
+                    )
+                    sent += len(payloads)
+                    logger.info(
+                        "Pushed stock batch %d/%d: %d stocks",
+                        batch_number,
+                        batches,
+                        len(payloads),
+                    )
 
         logger.info("Stock pull finished: sent=%d skipped=%d total=%d", sent, skipped, total)

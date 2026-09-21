@@ -15,15 +15,19 @@ class YfinanceClient:
             stock = yf.Ticker(ticker)
             with contextlib.redirect_stderr(io.StringIO()):
                 info = stock.info
+
+            if not isinstance(info, dict) or not (
+                info.get("longName") or info.get("shortName")
+            ):
+                logger.warning("Ticker %s not found", ticker)
+                return None
+
             logger.debug(
                 "Fetched stock info for %s with %d fields",
                 ticker,
                 len(info) if isinstance(info, dict) else 0,
             )
             return info
-        except YFRateLimitError:
-            logger.warning("Rate limit exceeded while fetching stock info for %s", ticker)
-            raise
         
         except YFRateLimitError:
             logger.warning("Rate limit exceeded while fetching price history for %s", ticker)
@@ -41,6 +45,9 @@ class YfinanceClient:
                 ticker, len(history), len(history.columns),
             )
             return history
+        except YFRateLimitError:
+            logger.warning("Rate limit exceeded while fetching price history for %s", ticker)
+            raise
         except Exception:
             logger.exception("Failed to fetch price history for %s", ticker)
             return None

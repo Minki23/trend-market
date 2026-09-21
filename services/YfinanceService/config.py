@@ -3,6 +3,11 @@ import os
 from dataclasses import dataclass
 
 
+class YfinanceNotFoundFilter(logging.Filter):
+    def filter(self, record):
+        return "HTTP Error 404" not in record.getMessage()
+
+
 @dataclass(frozen=True)
 class Settings:
     batch_size: int
@@ -32,7 +37,7 @@ def load_settings():
             "EXCLUDED_TICKERS_PATH",
             "data/excluded_tickers.txt",
         ),
-        max_workers=int(os.getenv("MAX_WORKERS", "15")),
+        max_workers=int(os.getenv("MAX_WORKERS", "5")),
     )
 
 
@@ -41,3 +46,4 @@ def configure_logging():
         level=logging.INFO,
         format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
     )
+    logging.getLogger("yfinance").addFilter(YfinanceNotFoundFilter())
