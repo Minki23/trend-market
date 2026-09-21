@@ -38,9 +38,12 @@ public class MqttMessageHandler {
     public void handle(String topic, String payload) {
         try {
             if (MqttTopics.STOCK.equals(topic)) {
-                StockDTO stockDTO =
-                        mapper.readValue(payload, StockDTO.class);
-                stockService.saveDTOToDatabase(stockDTO);
+                List<StockDTO> stockDTOs =
+                        mapper.readValue(payload, new TypeReference<>() {});
+                for(StockDTO dto : stockDTOs){
+                    stockService.saveDTOToDatabase(dto);
+                }
+
             }
 
             if (MqttTopics.PRICE.equals(topic)) {

@@ -33,8 +33,7 @@ public class StockController {
 
     @GetMapping("/{StockId}")
     public Optional<Stock> fetchByTicker(@PathVariable String ticker){
-        Optional<Stock> response = stockService.fetchByTickerFromDatabase(ticker);
-        return response;
+        return stockService.fetchByTickerFromDatabase(ticker);
     }
 
     @GetMapping
@@ -46,6 +45,9 @@ public class StockController {
     public Map<String,String> getAllStockNames(){
         return stockService.getAllNamesFromDatabase();
     }
+
+    @GetMapping("/tickers")
+    public List<String> getAllTickersFromDatabase(){return stockService.fetchAllTickersFromDatabase();}
 
     @DeleteMapping
     public void removeAllStocks(){

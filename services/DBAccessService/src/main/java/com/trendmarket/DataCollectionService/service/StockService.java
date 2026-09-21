@@ -123,4 +123,8 @@ public class StockService {
                 MessageBuilder.withPayload("Download all stocks from API").build()
         );
     }
+
+    public List<String> fetchAllTickersFromDatabase() {
+        return stockRepository.findAll().stream().map(Stock::getTicker).sorted().collect(Collectors.toList());
+    }
 }
