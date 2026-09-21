@@ -52,6 +52,7 @@ public class StockService {
         stock = Stock.builder()
                 .ticker(dto.getTicker())
                 .name(dto.getName())
+                .tradeable(dto.isTradeable())
                 .sector(dto.getSector())
                 .sectorKey(dto.getSectorKey())
                 .industry(dto.getIndustry())
@@ -93,8 +94,7 @@ public class StockService {
     }
 
     public Optional<Stock> getByTicker(String ticker){
-        Optional<Stock> stock = stockRepository.findByTicker(ticker);
-        return stock;
+        return stockRepository.findByTicker(ticker);
     }
 
     public void fetchFromService(String ticker){

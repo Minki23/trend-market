@@ -5,7 +5,6 @@ import com.trendmarket.DataCollectionService.data.StockPrice;
 import com.trendmarket.DataCollectionService.dto.StockDTO;
 import com.trendmarket.DataCollectionService.service.PriceService;
 import com.trendmarket.DataCollectionService.service.StockService;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,22 +64,22 @@ public class StockController {
 
     @PostMapping("/prices")
     public void fetchAllPrices(){
-        priceService.fetchAllPrices();
+        priceService.pullPricesFromAPI();
     }
 
     @GetMapping("/prices")
     public List<StockPrice> getAll(){
-        return priceService.getAllPrices();
+        return priceService.fetchAllPricesFromDatabase();
     }
 
     @GetMapping("/prices/{stockId}")
     public Optional<List<StockPrice>> getAllofTicker(@PathVariable Long stockId){
 
-        return priceService.fetchPricesId(stockId);
+        return priceService.fetchPricesById(stockId);
     }
 
     @DeleteMapping("/prices/clear")
     public void clearPricesData(){
-        priceService.clearPrices();
+        priceService.clearPricesTable();
     }
 }

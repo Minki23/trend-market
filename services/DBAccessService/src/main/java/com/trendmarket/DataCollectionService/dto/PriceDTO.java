@@ -20,6 +20,8 @@ public class PriceDTO {
 
     private LocalDateTime datetime;
 
+    private int dayOfTheWeek;
+
     private Double open;
 
     private Double high;

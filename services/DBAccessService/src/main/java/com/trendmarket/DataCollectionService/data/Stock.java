@@ -22,6 +22,8 @@ public class Stock {
     @Column(nullable = false)
     private String name;
 
+    private boolean tradeable;
+
     private String sector;
 
     private String sectorKey;

@@ -13,6 +13,8 @@ public class StockDTO {
 
     private String name;
 
+    private boolean tradeable;
+
     private String longName;
 
     private String shortName;
