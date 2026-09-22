@@ -11,6 +11,7 @@ class YfinanceNotFoundFilter(logging.Filter):
 @dataclass(frozen=True)
 class Settings:
     batch_size: int
+    rate_limit_wait_seconds: float
     database_tickers_url: str
     database_api_timeout: float
     mqtt_host: str
@@ -25,9 +26,14 @@ def load_settings():
     if batch_size <= 0:
         raise ValueError("BATCH_SIZE must be greater than zero")
 
+    rate_limit_wait_seconds = float(os.getenv("RATE_LIMIT_WAIT_SECONDS", "120"))
+    if rate_limit_wait_seconds < 0:
+        raise ValueError("RATE_LIMIT_WAIT_SECONDS must not be negative")
+
     database_api_url = os.getenv("DATABASE_API_URL", "http://localhost:8080").rstrip("/")
     return Settings(
         batch_size=batch_size,
+        rate_limit_wait_seconds=rate_limit_wait_seconds,
         database_tickers_url=f"{database_api_url}/stocks/tickers",
         database_api_timeout=float(os.getenv("DATABASE_API_TIMEOUT", "10")),
         mqtt_host=os.getenv("MQTT_HOST", "mosquitto"),

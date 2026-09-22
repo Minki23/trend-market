@@ -33,6 +33,7 @@ class Application:
             exclusion_store,
             settings.batch_size,
             settings.max_workers,
+            settings.rate_limit_wait_seconds,
         )
         self.price_service = PriceService(
             yfinance_client,

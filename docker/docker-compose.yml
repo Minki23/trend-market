@@ -80,6 +80,7 @@ services:
     environment:
       DATABASE_API_URL: ${DATABASE_API_URL}
       BATCH_SIZE: ${BATCH_SIZE}
+      RATE_LIMIT_WAIT_SECONDS: ${RATE_LIMIT_WAIT_SECONDS}
     volumes:
       - ../services/YfinanceService/data/excluded_tickers.txt:/app/data/excluded_tickers.txt
     networks:

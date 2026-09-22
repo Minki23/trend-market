@@ -26,12 +26,21 @@ def build_stock_payload(ticker, info):
 
 
 class StockService:
-    def __init__(self, yfinance_client, sender, exclusion_store, batch_size, max_workers):
+    def __init__(
+        self,
+        yfinance_client,
+        sender,
+        exclusion_store,
+        batch_size,
+        max_workers,
+        rate_limit_wait_seconds=120,
+    ):
         self.yfinance_client = yfinance_client
         self.sender = sender
         self.exclusion_store = exclusion_store
         self.batch_size = batch_size
         self.max_workers = max_workers
+        self.rate_limit_wait_seconds = rate_limit_wait_seconds
 
     def _get_info(self, ticker):
         return self.yfinance_client.get_info(ticker)
@@ -55,24 +64,28 @@ class StockService:
                     len(batch),
                     self.max_workers,
                 )
-                tasks = [
-                    loop.run_in_executor(executor, self._get_info, ticker)
-                    for ticker in batch
-                ]
+                while True:
+                    tasks = [
+                        loop.run_in_executor(executor, self._get_info, ticker)
+                        for ticker in batch
+                    ]
 
-                try:
-                    results = await asyncio.gather(*tasks)
-                except YFRateLimitError:
-                    for task in tasks:
-                        if not task.done():
-                            task.cancel()
-                    await asyncio.gather(*tasks, return_exceptions=True)
-                    logger.warning(
-                        "Rate limit reached in stock batch %d/%d; stopping stock pull",
-                        batch_number,
-                        batches,
-                    )
-                    return
+                    try:
+                        results = await asyncio.gather(*tasks)
+                        break
+                    except YFRateLimitError:
+                        for task in tasks:
+                            if not task.done():
+                                task.cancel()
+                        await asyncio.gather(*tasks, return_exceptions=True)
+                        logger.warning(
+                            "Rate limit reached in stock batch %d/%d; "
+                            "retrying in %.0f seconds",
+                            batch_number,
+                            batches,
+                            self.rate_limit_wait_seconds,
+                        )
+                        await asyncio.sleep(self.rate_limit_wait_seconds)
 
                 payloads = []
                 for ticker, info in zip(batch, results):
