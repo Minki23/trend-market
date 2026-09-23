@@ -1,10 +1,9 @@
-import asyncio
 import json
 import logging
-from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
-from yfinance.exceptions import YFRateLimitError
+
+from concurrent_fetcher import ConcurrentFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +29,10 @@ class PriceService:
     def __init__(self, yfinance_client, sender, max_workers):
         self.yfinance_client = yfinance_client
         self.sender = sender
-        self.max_workers = max_workers
-
-    def _fetch(self, ticker):
-        return ticker, self.yfinance_client.get_price_history(ticker)
+        self.fetcher = ConcurrentFetcher(
+            self.yfinance_client.get_price_history,
+            max_workers,
+        )
 
     def _build_payload(self, ticker, history):
         prices = []
@@ -53,30 +52,23 @@ class PriceService:
     async def pull(self, payload):
         tickers = sorted(json.loads(payload.decode("utf-8")))
         logger.info("Starting price pull for %d tickers", len(tickers))
-        loop = asyncio.get_running_loop()
         sent = skipped = failed = 0
 
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            tasks = [loop.run_in_executor(executor, self._fetch, ticker) for ticker in tickers]
-            for task in asyncio.as_completed(tasks):
-                try:
-                    ticker, history = await task
-                    if history is None or history.empty:
-                        skipped += 1
-                        logger.warning("Skipping %s: no history data", ticker)
-                        continue
-                    prices = self._build_payload(ticker, history)
-                    await self.sender.send_message("price", json.dumps(prices, ensure_ascii=False))
-                    sent += 1
-                except YFRateLimitError:
-                    for pending_task in tasks:
-                        if not pending_task.done():
-                            pending_task.cancel()
-                    await asyncio.gather(*tasks, return_exceptions=True)
-                    logger.warning("Rate limit reached; stopping price pull")
-                    return
-                except Exception:
+        try:
+            async for ticker, history in self.fetcher.fetch_all(tickers):
+                if isinstance(history, Exception):
                     failed += 1
-                    logger.exception("Error processing price task")
+                    logger.error("Error fetching price history for %s", ticker, exc_info=history)
+                    continue
+                if history is None or history.empty:
+                    skipped += 1
+                    logger.warning("Skipping %s: no history data", ticker)
+                    continue
+                prices = self._build_payload(ticker, history)
+                await self.sender.send_message("price", json.dumps(prices, ensure_ascii=False))
+                sent += 1
+        except Exception:
+            failed += 1
+            logger.exception("Error processing price task")
 
         logger.info("Price pull finished: sent=%d skipped=%d failed=%d total=%d", sent, skipped, failed, len(tickers))
