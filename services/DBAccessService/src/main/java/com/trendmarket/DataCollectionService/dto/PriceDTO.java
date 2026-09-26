@@ -14,35 +14,36 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PriceDTO {
 
-    private String ticker;
+	private String ticker;
 
-    private Stock stock;
+	private Stock stock;
 
-    private LocalDateTime datetime;
+	private LocalDateTime datetime;
 
-    private int dayOfTheWeek;
+	private int dayOfTheWeek;
 
-    private Double open;
+	private Double open;
 
-    private Double high;
+	private Double high;
 
-    private Double low;
+	private Double low;
 
-    private Double close;
+	private Double close;
 
-    private Long volume;
+	private Long volume;
 
-    private Double adjustedClose;
+	private Double adjustedClose;
+	private LocalDateTime timestamp;
 
-    public Long getStockId() {
-        return this.stock != null ? this.stock.getStockId() : null;
-    }
+	public Long getStockId() {
+		return this.stock != null ? this.stock.getStockId() : null;
+	}
 
-    public String getTicker() {
-        if (this.ticker != null && !this.ticker.isBlank()) {
-            return this.ticker;
-        }
+	public String getTicker() {
+		if (this.ticker != null && !this.ticker.isBlank()) {
+			return this.ticker;
+		}
 
-        return this.stock != null ? this.stock.getTicker() : null;
-    }
+		return this.stock != null ? this.stock.getTicker() : null;
+	}
 }

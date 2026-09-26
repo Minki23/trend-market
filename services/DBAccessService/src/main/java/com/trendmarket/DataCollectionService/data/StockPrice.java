@@ -7,59 +7,46 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Table(
-        name = "stock_prices",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "stock_price_stock_datetime",
-                        columnNames = {"stock_id", "datetime"}
-                )
-        }
-)
+@Table(name = "stock_prices", uniqueConstraints = {
+	@UniqueConstraint(name = "stock_price_stock_datetime", columnNames = { "stock_id", "date_time" }) })
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class StockPrice {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long priceId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long priceId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "stock_id", nullable = false)
-    private Stock stock;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "stock_id", nullable = false)
+	private Stock stock;
 
-    @Column(name = "datetime", nullable = false)
-    private LocalDateTime dateTime;
+	@Column(name = "date_time")
+	private LocalDateTime dateTime;
 
-    private int dayOfTheWeek;
+	@Column(name = "timestamp")
+	private LocalDateTime timestamp;
 
-    private Double open;
+	private Integer dayOfTheWeek;
 
-    private Double high;
+	private Double open;
 
-    private Double low;
+	private Double high;
 
-    private Double close;
+	private Double low;
 
-    private Long volume;
+	private Double close;
 
-    private Double adjustedClose;
+	private Long volume;
 
-    @Override
-    public String toString() {
-        return "StockPrice{" +
-                "priceId=" + priceId +
-                ", stock=" + stock +
-                ", dateTime=" + dateTime +
-                ", dayOfTheWeek=" + dayOfTheWeek +
-                ", open=" + open +
-                ", high=" + high +
-                ", low=" + low +
-                ", close=" + close +
-                ", volume=" + volume +
-                ", adjustedClose=" + adjustedClose +
-                '}';
-    }
+	private Double adjustedClose;
+
+	@Override
+	public String toString() {
+		return "StockPrice{" + "priceId=" + priceId + ", stock=" + stock + ", dateTime=" + dateTime + ", dayOfTheWeek="
+				+ dayOfTheWeek + ", open=" + open + ", high=" + high + ", low=" + low + ", close=" + close + ", volume="
+				+ volume + ", adjustedClose=" + adjustedClose + '}';
+	}
 }

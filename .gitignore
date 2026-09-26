@@ -52,3 +52,7 @@ services/YfinanceService/pyvenv.cfg
 mosquitto/*
 mosquitto/data/mosquitto.db
 test/pricetest.py
+.metals
+.vscode/settings.json
+services/DataCollectionService/.gradle
+services/DataCollectionService/.idea

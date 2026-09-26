@@ -27,6 +27,10 @@ class Application:
             exclusion_store,
         )
         yfinance_client = YfinanceClient()
+        # ticker state store tracks which tickers have been pulled to avoid duplicate pulls
+        from ticker_state_store import TickerStateStore
+        state_store = TickerStateStore("data/ticker_state.csv")
+
         self.stock_service = StockService(
             yfinance_client,
             sender,
@@ -39,6 +43,7 @@ class Application:
             yfinance_client,
             sender,
             settings.max_workers,
+            settings.rate_limit_wait_seconds,
         )
         self.subscriber = YfinanceSubscriber(
             settings.mqtt_host,
@@ -46,11 +51,6 @@ class Application:
         )
 
     def on_message(self, client, userdata, message):
-        logger.info(
-            "Received MQTT message on topic %s (%d bytes)",
-            message.topic,
-            len(message.payload),
-        )
         try:
             if message.topic == "fetch_stocks":
                 asyncio.run(self.pull_missing_stocks())
