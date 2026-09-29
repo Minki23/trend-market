@@ -9,12 +9,19 @@ CREATE TABLE stocks (
 CREATE TABLE stock_prices (
     price_id SERIAL PRIMARY KEY,
     stock_id INT REFERENCES stocks(stock_id),
-    datetime TIMESTAMP,
+    datetime TIMESTAMP NOT NULL,
+    -- historical price fields
     open NUMERIC,
     high NUMERIC,
     low NUMERIC,
     close NUMERIC,
-    volume NUMERIC
+    volume NUMERIC,
+    -- adjusted close (used by the app)
+    adjusted_close NUMERIC,
+    -- legacy/aux timestamp column present in backups; set default to now() so inserts that don't provide it won't fail
+    "timestamp" TIMESTAMP DEFAULT now() NOT NULL,
+    -- day of week extracted from datetime (0-6)
+    day_of_the_week INTEGER
 );
 
 CREATE TABLE technical_indicators (

@@ -1,0 +1,1 @@
+SELECT COUNT(*) AS price_count FROM stock_prices;

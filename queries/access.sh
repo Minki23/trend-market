@@ -1,0 +1,1 @@
+ docker exec -it stock-postgres psql -U admin stocks

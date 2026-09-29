@@ -1,0 +1,1 @@
+SELECT COUNT(*) AS stock_count FROM stocks;
