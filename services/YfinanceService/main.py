@@ -55,6 +55,7 @@ class Application:
             if message.topic == "fetch_stocks":
                 asyncio.run(self.pull_missing_stocks())
             elif message.topic == "fetch_prices":
+                logger.info("Starting price pull for %d tickers", len(self.tickers))
                 asyncio.run(self.price_service.pull(message.payload))
             else:
                 logger.warning("Ignoring unsupported MQTT topic: %s", message.topic)

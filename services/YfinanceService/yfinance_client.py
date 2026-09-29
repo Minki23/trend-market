@@ -19,7 +19,6 @@ class YfinanceClient:
             if not isinstance(info, dict) or not (
                 info.get("longName") or info.get("shortName")
             ):
-                logger.warning("Ticker %s not found", ticker)
                 return None
 
             logger.debug(

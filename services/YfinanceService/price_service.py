@@ -66,6 +66,7 @@ class PriceService:
                     continue
                 prices = self._build_payload(ticker, history)
                 await self.sender.send_message("price", json.dumps(prices, ensure_ascii=False))
+                logger.info("Sent %d price records for %s", len(prices), ticker)
                 sent += 1
         except Exception:
             failed += 1
