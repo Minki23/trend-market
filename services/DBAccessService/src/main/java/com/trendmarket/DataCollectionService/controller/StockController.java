@@ -5,6 +5,7 @@ import com.trendmarket.DataCollectionService.data.StockPrice;
 import com.trendmarket.DataCollectionService.dto.StockDTO;
 import com.trendmarket.DataCollectionService.service.PriceService;
 import com.trendmarket.DataCollectionService.service.StockService;
+import com.trendmarket.DataCollectionService.service.TechnicalIndicatorService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,13 +18,16 @@ public class StockController {
 
     private final StockService stockService;
     private final PriceService priceService;
+    private final TechnicalIndicatorService technicalIndicatorService;
 
     public StockController(
             StockService stockService,
-            PriceService priceService
+            PriceService priceService,
+            TechnicalIndicatorService technicalIndicatorService
     ) {
         this.stockService = stockService;
         this.priceService = priceService;
+        this.technicalIndicatorService = technicalIndicatorService;
     }
 
     @PostMapping
@@ -67,6 +71,21 @@ public class StockController {
     @PostMapping("/prices")
     public void fetchAllPrices(){
         priceService.pullPricesFromAPI();
+    }
+
+    @PostMapping("/prices/indicators")
+    public void checkPriceIndicators() {
+        priceService.requestIndicatorCheck();
+    }
+
+    @GetMapping("/prices/indicators/continuity")
+    public Map<String, Boolean> getDateContinuity() {
+        return technicalIndicatorService.getLatestDateContinuity();
+    }
+
+    @GetMapping("/prices/indicators/continuity/{ticker}")
+    public Boolean getDateContinuity(@PathVariable String ticker) {
+        return technicalIndicatorService.getLatestDateContinuity(ticker);
     }
 
     @GetMapping("/prices")
