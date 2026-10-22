@@ -10,4 +10,6 @@ public final class MqttTopics {
     public static final String STOCK = "stock";
     public static final String FETCH = "fetch_stocks";
     public static final String PRICE = "price";
+    public static final String INDICATOR_PRICE_CHECK = "indicator/price-check";
+    public static final String INDICATOR_RESULT = "indicator/result";
 }

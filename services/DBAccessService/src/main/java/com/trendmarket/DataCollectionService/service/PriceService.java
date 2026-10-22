@@ -4,6 +4,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.trendmarket.DataCollectionService.data.Stock;
 import com.trendmarket.DataCollectionService.data.StockPrice;
 import com.trendmarket.DataCollectionService.dto.PriceDTO;
+import com.trendmarket.DataCollectionService.dto.IndicatorPriceDTO;
 import com.trendmarket.DataCollectionService.repository.PriceRepository;
 import com.trendmarket.DataCollectionService.repository.StockRepository;
 import org.springframework.integration.support.MessageBuilder;
@@ -13,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.stereotype.Service;
+import com.trendmarket.DataCollectionService.mqtt.MqttTopics;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -54,6 +56,34 @@ public class PriceService {
 		System.out.println("received call, pulling prices...");
 		mqttOutboundChannel
 				.send(MessageBuilder.withPayload(payload).setHeader(MqttHeaders.TOPIC, "fetch_prices").build());
+	}
+
+	public void requestIndicatorCheck() {
+		Map<String, List<IndicatorPriceDTO>> pricesByTicker = priceRepository.findAll().stream()
+				.filter(price -> price.getStock() != null)
+				.collect(Collectors.groupingBy(
+						price -> price.getStock().getTicker(),
+						Collectors.mapping(price -> new IndicatorPriceDTO(
+								price.getStock().getTicker(),
+								price.getDateTime(),
+								price.getTimestamp(),
+								price.getOpen(),
+								price.getHigh(),
+								price.getLow(),
+								price.getClose()
+						), Collectors.toList())
+				));
+
+		pricesByTicker.forEach((ticker, prices) -> {
+			try {
+				String payload = objectMapper.writeValueAsString(prices);
+				mqttOutboundChannel.send(MessageBuilder.withPayload(payload)
+						.setHeader(MqttHeaders.TOPIC, MqttTopics.INDICATOR_PRICE_CHECK)
+						.build());
+			} catch (Exception exception) {
+				throw new IllegalStateException("Failed to send indicator request for " + ticker, exception);
+			}
+		});
 	}
 
 	public StockPrice preparePriceDTO(PriceDTO dto) {

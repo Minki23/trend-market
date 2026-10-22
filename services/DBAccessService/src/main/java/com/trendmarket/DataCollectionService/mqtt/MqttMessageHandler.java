@@ -5,6 +5,7 @@ import com.trendmarket.DataCollectionService.dto.PriceDTO;
 import com.trendmarket.DataCollectionService.dto.StockDTO;
 import com.trendmarket.DataCollectionService.service.PriceService;
 import com.trendmarket.DataCollectionService.service.StockService;
+import com.trendmarket.DataCollectionService.service.TechnicalIndicatorService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -24,15 +25,18 @@ public class MqttMessageHandler {
     private final StockService stockService;
 
     private  final PriceService priceService;
+    private final TechnicalIndicatorService technicalIndicatorService;
 
     public MqttMessageHandler(
             ObjectMapper mapper,
             StockService stockService,
-            PriceService priceService
+            PriceService priceService,
+            TechnicalIndicatorService technicalIndicatorService
     ) {
         this.mapper = mapper.copy().registerModule(new JavaTimeModule());
         this.stockService = stockService;
         this.priceService = priceService;
+        this.technicalIndicatorService = technicalIndicatorService;
     }
 
     public void handle(String topic, String payload) {
@@ -55,6 +59,10 @@ public class MqttMessageHandler {
                                 }
                         );
                 priceService.pushPricesToDatabase(pricesList);
+            }
+
+            if (MqttTopics.INDICATOR_RESULT.equals(topic)) {
+                technicalIndicatorService.saveResult(payload);
             }
 
         } catch (JsonProcessingException e) {

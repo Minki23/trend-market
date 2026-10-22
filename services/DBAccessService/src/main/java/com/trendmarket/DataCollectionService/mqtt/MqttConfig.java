@@ -40,7 +40,8 @@ public class MqttConfig {
                         BROKER_URL,
                         "DataCollectionService-in",
                         "stock",
-                        "price"
+                        "price",
+                        MqttTopics.INDICATOR_RESULT
                 );
 
         adapter.setCompletionTimeout(5000);
