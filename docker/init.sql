@@ -46,6 +46,8 @@ CREATE TABLE technical_indicators (
     bollinger_width NUMERIC,
     atr NUMERIC,
     obv NUMERIC
+    ,date_continuity BOOLEAN
+    ,two_crows BOOLEAN
 );
 CREATE TABLE trends (
     trend_id SERIAL PRIMARY KEY,
