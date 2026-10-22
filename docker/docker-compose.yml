@@ -85,6 +85,16 @@ services:
       - ../services/YfinanceService/data/excluded_tickers.txt:/app/data/excluded_tickers.txt
     networks:
       - stock-network
+  indicator-service:
+    build: ../services/IndicatorService
+    container_name: indicator-service
+    restart: always
+    depends_on:
+      - mosquitto
+    environment:
+      MQTT_BROKER_URL: tcp://mosquitto:1883
+    networks:
+      - stock-network
   # Seić wspólna do wszystkich serwisów
 networks:
   stock-network:
