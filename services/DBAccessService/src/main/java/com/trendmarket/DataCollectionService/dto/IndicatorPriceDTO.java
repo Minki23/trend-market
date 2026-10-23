@@ -17,4 +17,5 @@ public class IndicatorPriceDTO {
     private Double high;
     private Double low;
     private Double close;
+    private Long volume;
 }

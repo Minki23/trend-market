@@ -15,6 +15,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.stereotype.Service;
 import com.trendmarket.DataCollectionService.mqtt.MqttTopics;
+import org.springframework.core.task.TaskExecutor;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -33,15 +34,23 @@ public class PriceService {
 	private final StockRepository stockRepository;
 	private final Logger logger = Logger.getLogger(PriceService.class.getName());
 	private final Map<String, Stock> alreadyFound = new HashMap<>();
+	private final TaskExecutor indicatorTaskExecutor;
+	private final TechnicalIndicatorService technicalIndicatorService;
+	private final java.util.concurrent.atomic.AtomicBoolean indicatorCalculationRunning =
+			new java.util.concurrent.atomic.AtomicBoolean();
 
 	public PriceService(StockService stockService, PriceRepository priceRepository,
-			@Qualifier("mqttOutboundChannel") MessageChannel mqttOutboundChannel, StockRepository stockRepository) {
+			@Qualifier("mqttOutboundChannel") MessageChannel mqttOutboundChannel, StockRepository stockRepository,
+			@Qualifier("indicatorTaskExecutor") TaskExecutor indicatorTaskExecutor,
+			TechnicalIndicatorService technicalIndicatorService) {
 		this.priceRepository = priceRepository;
 		this.stockService = stockService;
 		this.mqttOutboundChannel = mqttOutboundChannel;
 		this.objectMapper = new ObjectMapper();
 		objectMapper.registerModule(new JavaTimeModule());
 		this.stockRepository = stockRepository;
+		this.indicatorTaskExecutor = indicatorTaskExecutor;
+		this.technicalIndicatorService = technicalIndicatorService;
 	}
 
 	public void pullPricesFromAPI() {
@@ -58,32 +67,102 @@ public class PriceService {
 				.send(MessageBuilder.withPayload(payload).setHeader(MqttHeaders.TOPIC, "fetch_prices").build());
 	}
 
-	public void requestIndicatorCheck() {
-		Map<String, List<IndicatorPriceDTO>> pricesByTicker = priceRepository.findAll().stream()
-				.filter(price -> price.getStock() != null)
-				.collect(Collectors.groupingBy(
-						price -> price.getStock().getTicker(),
-						Collectors.mapping(price -> new IndicatorPriceDTO(
-								price.getStock().getTicker(),
-								price.getDateTime(),
-								price.getTimestamp(),
-								price.getOpen(),
-								price.getHigh(),
-								price.getLow(),
-								price.getClose()
-						), Collectors.toList())
-				));
+	public boolean startIndicatorCheck() {
+		if (!indicatorCalculationRunning.compareAndSet(false, true)) {
+			return false;
+		}
+		try {
+			indicatorTaskExecutor.execute(this::requestIndicatorCheck);
+			return true;
+		} catch (RuntimeException exception) {
+			indicatorCalculationRunning.set(false);
+			throw exception;
+		}
+	}
 
-		pricesByTicker.forEach((ticker, prices) -> {
-			try {
-				String payload = objectMapper.writeValueAsString(prices);
-				mqttOutboundChannel.send(MessageBuilder.withPayload(payload)
-						.setHeader(MqttHeaders.TOPIC, MqttTopics.INDICATOR_PRICE_CHECK)
-						.build());
-			} catch (Exception exception) {
-				throw new IllegalStateException("Failed to send indicator request for " + ticker, exception);
+	private void requestIndicatorCheck() {
+		long requestStartedAt = System.nanoTime();
+		logger.info("Indicator calculation started");
+		int tickerCount = 0;
+		int recordCount = 0;
+		try {
+			List<String> tickers = priceRepository.findDistinctTickers();
+			logger.info(String.format("Indicator ticker batches found: count=%d", tickers.size()));
+			for (String ticker : tickers) {
+				long tickerStartedAt = System.nanoTime();
+				try {
+					logger.info(String.format("Loading indicator batch: ticker=%s", ticker));
+					List<StockPrice> stockPrices = priceRepository.findByStock_TickerOrderByDateTimeAsc(ticker);
+					logger.info(String.format("Indicator batch loaded: ticker=%s, records=%d",
+							ticker, stockPrices.size()));
+					LocalDateTime latestIndicatorDatetime =
+							technicalIndicatorService.getLatestIndicatorDatetime(ticker);
+					int existingRecordCount = 0;
+					if (latestIndicatorDatetime != null) {
+						existingRecordCount = (int) stockPrices.stream()
+								.filter(price -> !price.getDateTime().isAfter(latestIndicatorDatetime))
+								.count();
+						stockPrices = stockPrices.stream()
+								.filter(price -> price.getDateTime().isAfter(latestIndicatorDatetime))
+								.toList();
+					}
+					logger.info(String.format(
+							"Indicator records filtered: ticker=%s, latestIndicatorDatetime=%s, skipped=%d, new=%d",
+							ticker, latestIndicatorDatetime, existingRecordCount, stockPrices.size()));
+					if (stockPrices.isEmpty()) {
+						logger.info(String.format("Indicator batch skipped: ticker=%s, no new records", ticker));
+						continue;
+					}
+					List<IndicatorPriceDTO> prices = stockPrices.stream()
+							.map(price -> new IndicatorPriceDTO(
+									ticker,
+									price.getDateTime(),
+									price.getTimestamp(),
+									price.getOpen(),
+									price.getHigh(),
+									price.getLow(),
+									price.getClose(),
+									price.getVolume()
+							))
+							.toList();
+					String payload = objectMapper.writeValueAsString(prices);
+					java.util.concurrent.CompletableFuture<Integer> resultFuture =
+							technicalIndicatorService.registerBatch(ticker);
+					logger.info(String.format("Sending indicator batch: ticker=%s, records=%d, payloadBytes=%d",
+							ticker, prices.size(), payload.getBytes(java.nio.charset.StandardCharsets.UTF_8).length));
+					try {
+						mqttOutboundChannel.send(MessageBuilder.withPayload(payload)
+								.setHeader(MqttHeaders.TOPIC, MqttTopics.INDICATOR_PRICE_CHECK)
+								.build());
+						logger.info(String.format("Indicator batch sent, waiting for persistence: ticker=%s", ticker));
+						int persistedRecords = technicalIndicatorService.awaitBatch(ticker, resultFuture);
+						logger.info(String.format(
+								"Indicator batch persisted: ticker=%s, records=%d, batchMs=%d",
+								ticker, persistedRecords, elapsedMillis(tickerStartedAt)));
+					} catch (Exception exception) {
+						technicalIndicatorService.cancelBatch(ticker, resultFuture);
+						throw exception;
+					}
+					tickerCount++;
+					recordCount += prices.size();
+				} catch (Exception tickerException) {
+					logger.log(Level.SEVERE, String.format("Indicator batch failed: ticker=%s", ticker),
+							tickerException);
+				}
 			}
-		});
+			logger.info(String.format(
+				"Indicator requests prepared: tickers=%d, records=%d, totalMs=%d",
+				tickerCount, recordCount,
+				elapsedMillis(requestStartedAt)));
+		} catch (Exception exception) {
+			logger.log(java.util.logging.Level.SEVERE, "Indicator calculation request failed", exception);
+		} finally {
+			indicatorCalculationRunning.set(false);
+		}
+	}
+
+	private long elapsedMillis(long startedAt) {
+		return (System.nanoTime() - startedAt) / 1_000_000;
 	}
 
 	public StockPrice preparePriceDTO(PriceDTO dto) {
