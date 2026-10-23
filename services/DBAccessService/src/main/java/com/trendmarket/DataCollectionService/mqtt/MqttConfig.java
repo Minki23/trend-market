@@ -98,7 +98,7 @@ public class MqttConfig {
                         "DataCollectionService-out"
                 );
 
-        messageHandler.setAsync(true);
+        messageHandler.setAsync(false);
         messageHandler.setDefaultTopic(MqttTopics.FETCH);
         messageHandler.setDefaultQos(1);
 

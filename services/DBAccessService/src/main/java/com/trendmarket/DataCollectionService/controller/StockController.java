@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/stocks")
@@ -74,8 +75,25 @@ public class StockController {
     }
 
     @PostMapping("/prices/indicators")
-    public void checkPriceIndicators() {
-        priceService.requestIndicatorCheck();
+    public ResponseEntity<Map<String, String>> checkPriceIndicators() {
+        boolean started = priceService.startIndicatorCheck();
+        return ResponseEntity.accepted().body(Map.of(
+                "status", started ? "started" : "already_running",
+                "message", started
+                        ? "Indicator calculation started"
+                        : "Indicator calculation is already running"
+        ));
+    }
+
+    @PostMapping("/indicators/calculate")
+    public ResponseEntity<Map<String, String>> calculateIndicatorsForEveryStock() {
+        boolean started = priceService.startIndicatorCheck();
+        return ResponseEntity.accepted().body(Map.of(
+                "status", started ? "started" : "already_running",
+                "message", started
+                        ? "Indicator calculation started"
+                        : "Indicator calculation is already running"
+        ));
     }
 
     @GetMapping("/prices/indicators/continuity")

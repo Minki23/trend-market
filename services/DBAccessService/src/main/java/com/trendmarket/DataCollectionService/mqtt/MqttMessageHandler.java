@@ -67,7 +67,12 @@ public class MqttMessageHandler {
 
         } catch (JsonProcessingException e) {
 
-            logger.error("Failed to parse MQTT message: {}", payload, e);
+            logger.error(
+                    "Failed to parse MQTT message: payloadBytes={}, errorType={}, message={}",
+                    payload.getBytes(java.nio.charset.StandardCharsets.UTF_8).length,
+                    e.getClass().getSimpleName(),
+                    e.getMessage()
+            );
         }
     }
 }
