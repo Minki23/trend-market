@@ -10,6 +10,7 @@ class MqttMessageHandler(
     private val logger = LoggerFactory.getLogger(MqttMessageHandler::class.java)
 
     fun handle(topic: String, payload: String) {
+        logger.info("Dispatching MQTT message: topic={}, payloadBytes={}", topic, payload.toByteArray().size)
         when (topic) {
             PRICE_CHECK_TOPIC -> priceMessageService.handle(payload)
             else -> logger.warn("Ignoring MQTT message from unsupported topic '{}'", topic)

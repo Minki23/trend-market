@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.integration.channel.DirectChannel
+import org.springframework.integration.channel.ExecutorChannel
 import org.springframework.integration.core.MessageProducer
 import org.springframework.integration.endpoint.EventDrivenConsumer
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter
@@ -16,6 +17,7 @@ import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter
 import org.springframework.messaging.MessageChannel
 import org.springframework.messaging.MessageHandler
 import org.springframework.messaging.SubscribableChannel
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 @Configuration
 class MqttConfig(
@@ -26,8 +28,21 @@ class MqttConfig(
     }
 
     @Bean
-    fun mqttInputChannel(): MessageChannel {
-        return DirectChannel()
+    fun indicatorProcessingExecutor(): ThreadPoolTaskExecutor {
+        return ThreadPoolTaskExecutor().apply {
+            corePoolSize = 1
+            maxPoolSize = 1
+            setQueueCapacity(1)
+            setThreadNamePrefix("indicator-processing-")
+            initialize()
+        }
+    }
+
+    @Bean
+    fun mqttInputChannel(
+        indicatorProcessingExecutor: ThreadPoolTaskExecutor
+    ): MessageChannel {
+        return ExecutorChannel(indicatorProcessingExecutor)
     }
 
     @Bean
@@ -50,7 +65,7 @@ class MqttConfig(
         adapter.setCompletionTimeout(5000)
         adapter.setConverter(DefaultPahoMessageConverter())
         adapter.setQos(1)
-        adapter.setOutputChannel(mqttInputChannel())
+        adapter.setOutputChannel(mqttInputChannel(indicatorProcessingExecutor()))
 
         return adapter
     }
