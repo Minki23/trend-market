@@ -19,6 +19,7 @@ class Settings:
     ticker_csv_path: str
     excluded_tickers_path: str
     max_workers: int
+    yfinance_cache_dir: str
 
 
 def load_settings():
@@ -44,6 +45,10 @@ def load_settings():
             "data/excluded_tickers.txt",
         ),
         max_workers=int(os.getenv("MAX_WORKERS", "5")),
+        yfinance_cache_dir=os.getenv(
+            "YFINANCE_CACHE_DIR",
+            "/tmp/py-yfinance",
+        ),
     )
 
 

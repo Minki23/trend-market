@@ -9,7 +9,7 @@ from stock_service import StockService
 from subscriber import YfinanceSubscriber
 from ticker_exclusion_store import TickerExclusionStore
 from ticker_loader import TickerLoader
-from yfinance_client import YfinanceClient
+from yfinance_client import YfinanceClient, configure_yfinance_cache
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ class Application:
         sender = YfinanceSender(settings.mqtt_host, settings.mqtt_port)
         self.tickers = TickerLoader(settings.ticker_csv_path).load()
         exclusion_store = TickerExclusionStore(settings.excluded_tickers_path)
+        configure_yfinance_cache(settings.yfinance_cache_dir)
         self.database = DatabaseClient(
             settings.database_tickers_url,
             settings.database_api_timeout,

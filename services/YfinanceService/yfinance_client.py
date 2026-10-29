@@ -1,11 +1,17 @@
 import contextlib
 import io
 import logging
+import os
 
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 
 logger = logging.getLogger(__name__)
+
+
+def configure_yfinance_cache(cache_dir):
+    os.makedirs(cache_dir, exist_ok=True)
+    yf.set_tz_cache_location(cache_dir)
 
 
 class YfinanceClient:
