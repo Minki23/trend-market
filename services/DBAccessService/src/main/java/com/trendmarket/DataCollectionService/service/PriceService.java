@@ -10,6 +10,7 @@ import com.trendmarket.DataCollectionService.repository.StockRepository;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
@@ -36,13 +37,15 @@ public class PriceService {
 	private final Map<String, Stock> alreadyFound = new HashMap<>();
 	private final TaskExecutor indicatorTaskExecutor;
 	private final TechnicalIndicatorService technicalIndicatorService;
+	private final int indicatorBatchSize;
 	private final java.util.concurrent.atomic.AtomicBoolean indicatorCalculationRunning =
 			new java.util.concurrent.atomic.AtomicBoolean();
 
 	public PriceService(StockService stockService, PriceRepository priceRepository,
 			@Qualifier("mqttOutboundChannel") MessageChannel mqttOutboundChannel, StockRepository stockRepository,
 			@Qualifier("indicatorTaskExecutor") TaskExecutor indicatorTaskExecutor,
-			TechnicalIndicatorService technicalIndicatorService) {
+			TechnicalIndicatorService technicalIndicatorService,
+			@Value("${INDICATOR_BATCH_SIZE:1}") int indicatorBatchSize) {
 		this.priceRepository = priceRepository;
 		this.stockService = stockService;
 		this.mqttOutboundChannel = mqttOutboundChannel;
@@ -51,6 +54,10 @@ public class PriceService {
 		this.stockRepository = stockRepository;
 		this.indicatorTaskExecutor = indicatorTaskExecutor;
 		this.technicalIndicatorService = technicalIndicatorService;
+		if (indicatorBatchSize <= 0) {
+			throw new IllegalArgumentException("INDICATOR_BATCH_SIZE must be greater than zero");
+		}
+		this.indicatorBatchSize = indicatorBatchSize;
 	}
 
 	public void pullPricesFromAPI() {
@@ -92,9 +99,11 @@ public class PriceService {
 		logger.info("Indicator calculation started");
 		int tickerCount = 0;
 		int recordCount = 0;
+		Map<String, PendingIndicatorBatch> pendingBatches = new LinkedHashMap<>();
 		try {
 			List<String> tickers = priceRepository.findDistinctTickers();
-			logger.info(String.format("Indicator ticker batches found: count=%d", tickers.size()));
+			logger.info(String.format("Indicator ticker batches found: count=%d, batchSize=%d",
+					tickers.size(), indicatorBatchSize));
 			for (String ticker : tickers) {
 				long tickerStartedAt = System.nanoTime();
 				try {
@@ -141,22 +150,29 @@ public class PriceService {
 						mqttOutboundChannel.send(MessageBuilder.withPayload(payload)
 								.setHeader(MqttHeaders.TOPIC, MqttTopics.INDICATOR_PRICE_CHECK)
 								.build());
-						logger.info(String.format("Indicator batch sent, waiting for persistence: ticker=%s", ticker));
-						int persistedRecords = technicalIndicatorService.awaitBatch(ticker, resultFuture);
-						logger.info(String.format(
-								"Indicator batch persisted: ticker=%s, records=%d, batchMs=%d",
-								ticker, persistedRecords, elapsedMillis(tickerStartedAt)));
+						pendingBatches.put(
+								ticker,
+								new PendingIndicatorBatch(resultFuture, tickerStartedAt, prices.size())
+						);
+						logger.info(String.format("Indicator batch sent: ticker=%s, pending=%d/%d",
+								ticker, pendingBatches.size(), indicatorBatchSize));
 					} catch (Exception exception) {
 						technicalIndicatorService.cancelBatch(ticker, resultFuture);
 						throw exception;
 					}
-					tickerCount++;
-					recordCount += prices.size();
+					if (pendingBatches.size() >= indicatorBatchSize) {
+						int[] persisted = awaitPendingBatches(pendingBatches);
+						tickerCount += persisted[0];
+						recordCount += persisted[1];
+					}
 				} catch (Exception tickerException) {
 					logger.log(Level.SEVERE, String.format("Indicator batch failed: ticker=%s", ticker),
 							tickerException);
 				}
 			}
+			int[] persisted = awaitPendingBatches(pendingBatches);
+			tickerCount += persisted[0];
+			recordCount += persisted[1];
 			logger.info(String.format(
 				"Indicator requests prepared: tickers=%d, records=%d, totalMs=%d",
 				tickerCount, recordCount,
@@ -167,6 +183,34 @@ public class PriceService {
 			indicatorCalculationRunning.set(false);
 		}
 	}
+
+	private int[] awaitPendingBatches(Map<String, PendingIndicatorBatch> pendingBatches) {
+		int tickerCount = 0;
+		int recordCount = 0;
+		for (Map.Entry<String, PendingIndicatorBatch> entry : pendingBatches.entrySet()) {
+			String ticker = entry.getKey();
+			PendingIndicatorBatch pending = entry.getValue();
+			try {
+				int persistedRecords = technicalIndicatorService.awaitBatch(ticker, pending.future());
+				logger.info(String.format(
+						"Indicator batch persisted: ticker=%s, records=%d, batchMs=%d",
+						ticker, persistedRecords, elapsedMillis(pending.startedAt())));
+				tickerCount++;
+				recordCount += pending.recordCount();
+			} catch (Exception exception) {
+				logger.log(Level.SEVERE, String.format("Indicator batch failed: ticker=%s", ticker),
+						exception);
+			}
+		}
+		pendingBatches.clear();
+		return new int[] {tickerCount, recordCount};
+	}
+
+	private record PendingIndicatorBatch(
+			java.util.concurrent.CompletableFuture<Integer> future,
+			long startedAt,
+			int recordCount
+	) {}
 
 	private long elapsedMillis(long startedAt) {
 		return (System.nanoTime() - startedAt) / 1_000_000;

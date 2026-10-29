@@ -68,6 +68,7 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
+      INDICATOR_BATCH_SIZE: ${INDICATOR_BATCH_SIZE}
     networks:
       - stock-network
   y-finance-service:
