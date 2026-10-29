@@ -55,12 +55,19 @@ public class PriceService {
 
 	public void pullPricesFromAPI() {
 		Map<String, String> stockNames = stockService.getAllNamesFromDatabase();
-		Set<String> tickers = stockNames.keySet();
+		sendPriceFetchRequest(stockNames.keySet());
+	}
+
+	public void pullPricesForStocksWithPrices() {
+		sendPriceFetchRequest(new LinkedHashSet<>(priceRepository.findDistinctTickers()));
+	}
+
+	private void sendPriceFetchRequest(Collection<String> tickers) {
 		String payload;
 		try {
 			payload = objectMapper.writeValueAsString(tickers);
 		} catch (Exception e) {
-			throw new RuntimeException("Couldn't map the payload");
+			throw new IllegalStateException("Couldn't serialize price fetch tickers", e);
 		}
 		System.out.println("received call, pulling prices...");
 		mqttOutboundChannel

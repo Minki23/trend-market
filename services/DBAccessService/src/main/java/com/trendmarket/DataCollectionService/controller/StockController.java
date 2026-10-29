@@ -74,6 +74,11 @@ public class StockController {
         priceService.pullPricesFromAPI();
     }
 
+    @PostMapping("/prices/with-records")
+    public void fetchPricesForStocksWithPrices() {
+        priceService.pullPricesForStocksWithPrices();
+    }
+
     @PostMapping("/prices/indicators")
     public ResponseEntity<Map<String, String>> checkPriceIndicators() {
         boolean started = priceService.startIndicatorCheck();
