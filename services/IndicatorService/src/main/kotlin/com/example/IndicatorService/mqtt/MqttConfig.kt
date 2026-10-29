@@ -21,18 +21,25 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 @Configuration
 class MqttConfig(
-    @Value("\${mqtt.broker-url}") private val brokerUrl: String
+    @Value("\${mqtt.broker-url}") private val brokerUrl: String,
+    @Value("\${indicator.batch-size:1}") private val indicatorBatchSize: Int
 ) {
     companion object {
         private const val CLIENT_ID = "IndicatorService-in"
     }
 
+    init {
+        require(indicatorBatchSize > 0) {
+            "indicator.batch-size must be greater than zero"
+        }
+    }
+
     @Bean
     fun indicatorProcessingExecutor(): ThreadPoolTaskExecutor {
         return ThreadPoolTaskExecutor().apply {
-            corePoolSize = 1
-            maxPoolSize = 1
-            setQueueCapacity(1)
+            corePoolSize = indicatorBatchSize
+            maxPoolSize = indicatorBatchSize
+            setQueueCapacity(indicatorBatchSize)
             setThreadNamePrefix("indicator-processing-")
             initialize()
         }
@@ -57,8 +64,6 @@ class MqttConfig(
         val adapter = MqttPahoMessageDrivenChannelAdapter(
             brokerUrl,
             CLIENT_ID,
-            "stock",
-            "price",
             "indicator/price-check"
         )
 
