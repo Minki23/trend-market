@@ -72,19 +72,19 @@ class PriceMessageService(
             logger.info("Starting indicator batch: ticker={}, records={}", ticker, prices.size)
             val calculationStartedAt = System.nanoTime()
             var dateContinuity = true
+            val indicatorSeries = calculateIndicatorSeries(prices)
             val results = prices.indices.map { index ->
-                val history = prices.subList(0, index + 1)
                 if (index > 0) {
                     dateContinuity = dateContinuity &&
                         isContinuous(prices[index - 1], prices[index])
                 }
-                val indicators = calculateIndicators(history)
+                val indicators = indicatorSeries[index]
                 IndicatorResult(
                     ticker = ticker,
                     recordCount = prices.size,
                     datetime = prices[index].dateTime(),
                     dateContinuity = dateContinuity,
-                    twoCrows = checkTwoCrows(history),
+                    twoCrows = checkTwoCrows(prices.subList(0, index + 1)),
                     sma20 = indicators.sma20,
                     ema12 = indicators.ema12,
                     ema26 = indicators.ema26,
@@ -134,34 +134,55 @@ class PriceMessageService(
     private fun elapsedMillis(startedAt: Long): Long =
         (System.nanoTime() - startedAt) / 1_000_000
 
-    private fun calculateIndicators(prices: List<PriceMessage>): CalculatedIndicators {
-        val validCloses = prices.map { it.close ?: return CalculatedIndicators.empty() }
-        val sma20 = validCloses.takeLast(20).average().takeIf { validCloses.size >= 20 }
-        val ema12 = ema(validCloses, 12)
-        val ema26 = ema(validCloses, 26)
+    private fun calculateIndicatorSeries(prices: List<PriceMessage>): List<CalculatedIndicators> {
+        val firstInvalidIndex = prices.indexOfFirst { it.close == null }
+        val validCount = if (firstInvalidIndex == -1) prices.size else firstInvalidIndex
+        val validPrices = prices.take(validCount)
+        val validCloses = validPrices.map { it.close!! }
         val shortEmaSeries = emaSeries(validCloses, 12)
         val longEmaSeries = emaSeries(validCloses, 26)
-        val macdSeries = shortEmaSeries.indices.mapNotNull { index ->
+        val macdStart = 25
+        val macdSeries = validCloses.indices.map { index ->
             val short = shortEmaSeries[index]
-            val long = longEmaSeries.getOrNull(index)
+            val long = longEmaSeries[index]
             if (short != null && long != null) short - long else null
         }
-        val macd = macdSeries.lastOrNull()
-        val macdSignal = ema(macdSeries, 9)
-        val rsi14 = calculateRsi(validCloses, 14)
-        val bollinger = calculateBollinger(validCloses, 20)
-        val atr14 = calculateAtr(prices, 14)
-        val obv = calculateObv(prices)
+        val signalSeries = emaSeries(macdSeries.drop(macdStart).filterNotNull(), 9)
+        val rsiSeries = calculateRsiSeries(validCloses, 14)
+        val bollingerSeries = validCloses.indices.map { index ->
+            calculateBollinger(validCloses.take(index + 1), 20)
+        }
+        val atrSeries = calculateAtrSeries(validPrices, 14)
+        val obvSeries = calculateObvSeries(validPrices)
 
-        return CalculatedIndicators(
-            sma20, ema12, ema26, rsi14, macd, macdSignal,
-            macd?.let { value -> macdSignal?.let { value - it } },
-            bollinger?.first, bollinger?.second, bollinger?.third, atr14, obv
-        )
-    }
+        return prices.indices.map { index ->
+            if (index >= validCount) {
+                return@map CalculatedIndicators.empty()
+            }
+            val sma20 = validCloses
+                .takeLast(index + 1)
+                .takeLast(20)
+                .average()
+                .takeIf { index >= 19 }
+            val macd = macdSeries[index]
+            val macdSignal = signalSeries.getOrNull(index - macdStart)
+            val bollinger = bollingerSeries[index]
 
-    private fun ema(values: List<Double>, period: Int): Double? {
-        return emaSeries(values, period).lastOrNull()
+            CalculatedIndicators(
+                sma20,
+                shortEmaSeries[index],
+                longEmaSeries[index],
+                rsiSeries[index],
+                macd,
+                macdSignal,
+                macd?.let { value -> macdSignal?.let { value - it } },
+                bollinger?.first,
+                bollinger?.second,
+                bollinger?.third,
+                atrSeries[index],
+                obvSeries[index]
+            )
+        }
     }
 
     private fun emaSeries(values: List<Double>, period: Int): List<Double?> {
@@ -178,17 +199,66 @@ class PriceMessageService(
         }
     }
 
-    private fun calculateRsi(values: List<Double>, period: Int): Double? {
-        if (values.size <= period) return null
+    private fun calculateRsiSeries(values: List<Double>, period: Int): List<Double?> {
+        if (values.size <= period) return List(values.size) { null }
         val changes = values.zipWithNext { previous, current -> current - previous }
         var averageGain = changes.take(period).filter { it > 0 }.sum() / period
         var averageLoss = changes.take(period).filter { it < 0 }.sumOf { -it } / period
-        changes.drop(period).forEach { change ->
-            averageGain = (averageGain * (period - 1) + maxOf(change, 0.0)) / period
-            averageLoss = (averageLoss * (period - 1) + maxOf(-change, 0.0)) / period
+        return buildList(values.size) {
+            repeat(period) { add(null) }
+            add(rsiValue(averageGain, averageLoss))
+            changes.drop(period).forEach { change ->
+                averageGain = (averageGain * (period - 1) + maxOf(change, 0.0)) / period
+                averageLoss = (averageLoss * (period - 1) + maxOf(-change, 0.0)) / period
+                add(rsiValue(averageGain, averageLoss))
+            }
         }
+    }
+
+    private fun rsiValue(averageGain: Double, averageLoss: Double): Double {
         return if (averageLoss == 0.0) 100.0
         else 100.0 - (100.0 / (1.0 + averageGain / averageLoss))
+    }
+
+    private fun calculateAtrSeries(prices: List<PriceMessage>, period: Int): List<Double?> {
+        val trueRanges = prices.indices.map { index ->
+            if (index == 0) {
+                null
+            } else {
+                val high = prices[index].high
+                val low = prices[index].low
+                val previousClose = prices[index - 1].close
+                if (high == null || low == null || previousClose == null) null
+                else maxOf(
+                    high - low,
+                    kotlin.math.abs(high - previousClose),
+                    kotlin.math.abs(low - previousClose)
+                )
+            }
+        }
+        return trueRanges.indices.map { index ->
+            trueRanges.subList(0, index + 1).filterNotNull().takeLast(period)
+                .takeIf { it.size == period }?.average()
+        }
+    }
+
+    private fun calculateObvSeries(prices: List<PriceMessage>): List<Long?> {
+        var obv = 0L
+        var valid = true
+        return prices.indices.map { index ->
+            if (prices[index].volume == null) {
+                valid = false
+            }
+            if (!valid) {
+                return@map null
+            }
+            if (index > 0 && prices[index].close!! > prices[index - 1].close!!) {
+                obv += prices[index].volume!!
+            } else if (index > 0 && prices[index].close!! < prices[index - 1].close!!) {
+                obv -= prices[index].volume!!
+            }
+            obv
+        }
     }
 
     private fun calculateBollinger(values: List<Double>, period: Int): Triple<Double, Double, Double>? {
@@ -199,27 +269,6 @@ class PriceMessageService(
         val upper = mean + 2 * deviation
         val lower = mean - 2 * deviation
         return Triple(upper, lower, if (mean == 0.0) 0.0 else (upper - lower) / mean)
-    }
-
-    private fun calculateAtr(prices: List<PriceMessage>, period: Int): Double? {
-        if (prices.size < period + 1) return null
-        val trueRanges = prices.zipWithNext().mapNotNull { (previous, current) ->
-            val high = current.high ?: return@mapNotNull null
-            val low = current.low ?: return@mapNotNull null
-            val previousClose = previous.close ?: return@mapNotNull null
-            maxOf(high - low, kotlin.math.abs(high - previousClose), kotlin.math.abs(low - previousClose))
-        }
-        return trueRanges.takeLast(period).takeIf { it.size == period }?.average()
-    }
-
-    private fun calculateObv(prices: List<PriceMessage>): Long? {
-        if (prices.any { it.close == null || it.volume == null }) return null
-        var obv = 0L
-        prices.zipWithNext().forEach { (previous, current) ->
-            if (current.close!! > previous.close!!) obv += current.volume!!
-            else if (current.close < previous.close) obv -= current.volume!!
-        }
-        return obv
     }
 
     fun checkDateContinuity(prices: List<PriceMessage>): Boolean {
