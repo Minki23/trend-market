@@ -32,12 +32,12 @@ def checkStatus(total=None):
                         current += 1
                         if has_total:
                             percentage = (current / total) * 100
-                            print(
+                            logger.info(
                                 f"[{current}/{total}] "
                                 f"{percentage:.2f}%"
                             )
                         else:
-                            print(f"[{current}]")
+                            logger.info(f"[{current}]")
 
                     return result
 
@@ -50,12 +50,12 @@ def checkStatus(total=None):
                         )
                         if has_total:
                             percentage = (current / total) * 100
-                            print(
+                            logger.info(
                                 f"[{current}/{total}] "
                                 f"{percentage:.2f}% - FAILED"
                             )
                         else:
-                            print(f"[{current}] - FAILED")
+                            logger.info(f"[{current}] - FAILED")
 
                     return None
 
@@ -72,12 +72,12 @@ def checkStatus(total=None):
                     current += 1
                     if has_total:
                         percentage = (current / total) * 100
-                        print(
+                        logger.info(
                             f"[{current}/{total}] "
                             f"{percentage:.2f}%"
                         )
                     else:
-                        print(f"[{current}]")
+                        logger.info(f"[{current}]")
 
                 return result
 
@@ -90,12 +90,12 @@ def checkStatus(total=None):
                     )
                     if has_total:
                         percentage = (current / total) * 100
-                        print(
+                        logger.info(
                             f"[{current}/{total}] "
                             f"{percentage:.2f}% - FAILED"
                         )
                     else:
-                        print(f"[{current}] - FAILED")
+                        logger.info(f"[{current}] - FAILED")
 
                 return None
 

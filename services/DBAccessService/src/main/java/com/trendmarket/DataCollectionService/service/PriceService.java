@@ -76,7 +76,7 @@ public class PriceService {
 		} catch (Exception e) {
 			throw new IllegalStateException("Couldn't serialize price fetch tickers", e);
 		}
-		System.out.println("received call, pulling prices...");
+		logger.info("Received call, pulling prices");
 		mqttOutboundChannel
 				.send(MessageBuilder.withPayload(payload).setHeader(MqttHeaders.TOPIC, "fetch_prices").build());
 	}
@@ -255,7 +255,7 @@ public class PriceService {
 			String ticker = stockPrice.getStock().getTicker();
 
 			if (stockPrice.getClose() == null) {
-				System.out.println("Record without close value:" + stockPrice);
+				logger.info(String.format("Record without close value: %s", stockPrice));
 				continue;
 			}
 
@@ -264,9 +264,9 @@ public class PriceService {
 				LocalDateTime lastDate = priceRepository.findTopByStockOrderByDateTimeDesc(stockPrice.getStock())
 						.map(StockPrice::getDateTime).orElse(DEFAULT_DATE);
 				if (lastDate.equals(DEFAULT_DATE))
-					System.out.println("No previous records found");
+					logger.info("No previous records found");
 				else
-					System.out.println("Latest current record for: " + ticker + " is: " + lastDate);
+					logger.info(String.format("Latest current record for: %s is: %s", ticker, lastDate));
 				return lastDate;
 			});
 
