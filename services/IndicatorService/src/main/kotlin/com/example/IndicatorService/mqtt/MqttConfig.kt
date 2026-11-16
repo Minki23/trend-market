@@ -26,6 +26,7 @@ class MqttConfig(
 ) {
     companion object {
         private const val CLIENT_ID = "IndicatorService-in"
+        private const val STOP_CLIENT_ID = "IndicatorService-stop"
     }
 
     init {
@@ -76,6 +77,27 @@ class MqttConfig(
     }
 
     @Bean
+    fun mqttStopInputChannel(): MessageChannel {
+        return DirectChannel()
+    }
+
+    @Bean
+    fun mqttStopInbound(): MessageProducer {
+        val adapter = MqttPahoMessageDrivenChannelAdapter(
+            brokerUrl,
+            STOP_CLIENT_ID,
+            "indicator/stop"
+        )
+
+        adapter.setCompletionTimeout(5000)
+        adapter.setConverter(DefaultPahoMessageConverter())
+        adapter.setQos(1)
+        adapter.setOutputChannel(mqttStopInputChannel())
+
+        return adapter
+    }
+
+    @Bean
     fun mqttOutboundChannel(): MessageChannel {
         return DirectChannel()
     }
@@ -109,6 +131,21 @@ class MqttConfig(
     fun mqttInboundEndpoint(
         @Qualifier("mqttInputChannel") channel: SubscribableChannel,
         @Qualifier("mqttInboundHandler") handler: MessageHandler
+    ): EventDrivenConsumer {
+        return EventDrivenConsumer(channel, handler)
+    }
+
+    @Bean
+    fun mqttStopInboundHandler(handler: MqttMessageHandler): MessageHandler {
+        return MessageHandler { message ->
+            handler.handle("indicator/stop", message.payload.toString())
+        }
+    }
+
+    @Bean
+    fun mqttStopInboundEndpoint(
+        @Qualifier("mqttStopInputChannel") channel: SubscribableChannel,
+        @Qualifier("mqttStopInboundHandler") handler: MessageHandler
     ): EventDrivenConsumer {
         return EventDrivenConsumer(channel, handler)
     }

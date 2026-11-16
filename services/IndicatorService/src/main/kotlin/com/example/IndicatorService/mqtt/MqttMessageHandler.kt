@@ -13,11 +13,13 @@ class MqttMessageHandler(
         logger.info("Dispatching MQTT message: topic={}, payloadBytes={}", topic, payload.toByteArray().size)
         when (topic) {
             PRICE_CHECK_TOPIC -> priceMessageService.handle(payload)
+            STOP_TOPIC -> priceMessageService.stop()
             else -> logger.warn("Ignoring MQTT message from unsupported topic '{}'", topic)
         }
     }
 
     private companion object {
         const val PRICE_CHECK_TOPIC = "indicator/price-check"
+        const val STOP_TOPIC = "indicator/stop"
     }
 }

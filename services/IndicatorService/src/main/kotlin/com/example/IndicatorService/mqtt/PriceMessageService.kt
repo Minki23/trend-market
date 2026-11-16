@@ -11,6 +11,8 @@ import org.springframework.messaging.MessageChannel
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicLong
 
 data class PriceMessage(
     val ticker: String? = null,
@@ -52,6 +54,7 @@ class PriceMessageService(
     private val mqttOutboundChannel: MessageChannel
 ) {
     private val logger = LoggerFactory.getLogger(PriceMessageService::class.java)
+    private val calculationGeneration = AtomicLong(0)
 
     private companion object {
         const val RESULT_TOPIC = "indicator/result"
@@ -70,10 +73,13 @@ class PriceMessageService(
 
             val ticker = prices.firstNotNullOfOrNull { it.ticker } ?: "unknown"
             logger.info("Starting indicator batch: ticker={}, records={}", ticker, prices.size)
+            val generation = calculationGeneration.get()
+            ensureCalculationActive(generation)
             val calculationStartedAt = System.nanoTime()
             var dateContinuity = true
-            val indicatorSeries = calculateIndicatorSeries(prices)
+            val indicatorSeries = calculateIndicatorSeries(prices, generation)
             val results = prices.indices.map { index ->
+                ensureCalculationActive(generation)
                 if (index > 0) {
                     dateContinuity = dateContinuity &&
                         isContinuous(prices[index - 1], prices[index])
@@ -99,6 +105,7 @@ class PriceMessageService(
                     obv = indicators.obv
                 )
             }
+            ensureCalculationActive(generation)
             val calculationMillis = elapsedMillis(calculationStartedAt)
             logger.info(
                 "Indicator batch calculated: ticker={}, inputRecords={}, resultRecords={}, calculationMs={}",
@@ -121,6 +128,9 @@ class PriceMessageService(
                 results.size,
                 elapsedMillis(handlerStartedAt)
             )
+
+        } catch (exception: CancellationException) {
+            logger.info("Indicator batch canceled before publishing")
         } catch (exception: JsonProcessingException) {
             logger.error(
                 "Failed to parse price MQTT message: payloadBytes={}, errorType={}, message={}",
@@ -131,31 +141,48 @@ class PriceMessageService(
         }
     }
 
+    fun stop() {
+        val generation = calculationGeneration.incrementAndGet()
+        logger.info("Stopping indicator calculations: generation={}", generation)
+    }
+
     private fun elapsedMillis(startedAt: Long): Long =
         (System.nanoTime() - startedAt) / 1_000_000
 
-    private fun calculateIndicatorSeries(prices: List<PriceMessage>): List<CalculatedIndicators> {
+    private fun ensureCalculationActive(generation: Long) {
+        if (calculationGeneration.get() != generation) {
+            throw CancellationException("Indicator calculation was stopped")
+        }
+    }
+
+    private fun calculateIndicatorSeries(
+        prices: List<PriceMessage>,
+        generation: Long
+    ): List<CalculatedIndicators> {
         val firstInvalidIndex = prices.indexOfFirst { it.close == null }
         val validCount = if (firstInvalidIndex == -1) prices.size else firstInvalidIndex
         val validPrices = prices.take(validCount)
         val validCloses = validPrices.map { it.close!! }
-        val shortEmaSeries = emaSeries(validCloses, 12)
-        val longEmaSeries = emaSeries(validCloses, 26)
+        val shortEmaSeries = emaSeries(validCloses, 12, generation)
+        val longEmaSeries = emaSeries(validCloses, 26, generation)
         val macdStart = 25
         val macdSeries = validCloses.indices.map { index ->
+            ensureCalculationActive(generation)
             val short = shortEmaSeries[index]
             val long = longEmaSeries[index]
             if (short != null && long != null) short - long else null
         }
-        val signalSeries = emaSeries(macdSeries.drop(macdStart).filterNotNull(), 9)
-        val rsiSeries = calculateRsiSeries(validCloses, 14)
+        val signalSeries = emaSeries(macdSeries.drop(macdStart).filterNotNull(), 9, generation)
+        val rsiSeries = calculateRsiSeries(validCloses, 14, generation)
         val bollingerSeries = validCloses.indices.map { index ->
-            calculateBollinger(validCloses.take(index + 1), 20)
+            ensureCalculationActive(generation)
+            calculateBollinger(validCloses.take(index + 1), 20, generation)
         }
-        val atrSeries = calculateAtrSeries(validPrices, 14)
-        val obvSeries = calculateObvSeries(validPrices)
+        val atrSeries = calculateAtrSeries(validPrices, 14, generation)
+        val obvSeries = calculateObvSeries(validPrices, generation)
 
         return prices.indices.map { index ->
+            ensureCalculationActive(generation)
             if (index >= validCount) {
                 return@map CalculatedIndicators.empty()
             }
@@ -185,7 +212,7 @@ class PriceMessageService(
         }
     }
 
-    private fun emaSeries(values: List<Double>, period: Int): List<Double?> {
+    private fun emaSeries(values: List<Double>, period: Int, generation: Long): List<Double?> {
         if (values.size < period) return List(values.size) { null }
         val multiplier = 2.0 / (period + 1)
         var result = values.take(period).average()
@@ -193,13 +220,18 @@ class PriceMessageService(
             repeat(period - 1) { add(null) }
             add(result)
             values.drop(period).forEach {
+                ensureCalculationActive(generation)
                 result = (it - result) * multiplier + result
                 add(result)
             }
         }
     }
 
-    private fun calculateRsiSeries(values: List<Double>, period: Int): List<Double?> {
+    private fun calculateRsiSeries(
+        values: List<Double>,
+        period: Int,
+        generation: Long
+    ): List<Double?> {
         if (values.size <= period) return List(values.size) { null }
         val changes = values.zipWithNext { previous, current -> current - previous }
         var averageGain = changes.take(period).filter { it > 0 }.sum() / period
@@ -208,6 +240,7 @@ class PriceMessageService(
             repeat(period) { add(null) }
             add(rsiValue(averageGain, averageLoss))
             changes.drop(period).forEach { change ->
+                ensureCalculationActive(generation)
                 averageGain = (averageGain * (period - 1) + maxOf(change, 0.0)) / period
                 averageLoss = (averageLoss * (period - 1) + maxOf(-change, 0.0)) / period
                 add(rsiValue(averageGain, averageLoss))
@@ -220,8 +253,13 @@ class PriceMessageService(
         else 100.0 - (100.0 / (1.0 + averageGain / averageLoss))
     }
 
-    private fun calculateAtrSeries(prices: List<PriceMessage>, period: Int): List<Double?> {
+    private fun calculateAtrSeries(
+        prices: List<PriceMessage>,
+        period: Int,
+        generation: Long
+    ): List<Double?> {
         val trueRanges = prices.indices.map { index ->
+            ensureCalculationActive(generation)
             if (index == 0) {
                 null
             } else {
@@ -237,15 +275,20 @@ class PriceMessageService(
             }
         }
         return trueRanges.indices.map { index ->
+            ensureCalculationActive(generation)
             trueRanges.subList(0, index + 1).filterNotNull().takeLast(period)
                 .takeIf { it.size == period }?.average()
         }
     }
 
-    private fun calculateObvSeries(prices: List<PriceMessage>): List<Long?> {
+    private fun calculateObvSeries(
+        prices: List<PriceMessage>,
+        generation: Long
+    ): List<Long?> {
         var obv = 0L
         var valid = true
         return prices.indices.map { index ->
+            ensureCalculationActive(generation)
             if (prices[index].volume == null) {
                 valid = false
             }
@@ -261,7 +304,12 @@ class PriceMessageService(
         }
     }
 
-    private fun calculateBollinger(values: List<Double>, period: Int): Triple<Double, Double, Double>? {
+    private fun calculateBollinger(
+        values: List<Double>,
+        period: Int,
+        generation: Long
+    ): Triple<Double, Double, Double>? {
+        ensureCalculationActive(generation)
         if (values.size < period) return null
         val window = values.takeLast(period)
         val mean = window.average()
