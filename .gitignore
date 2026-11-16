@@ -56,3 +56,10 @@ test/pricetest.py
 .vscode/settings.json
 services/DataCollectionService/.gradle
 services/DataCollectionService/.idea
+services/ModelService/plan.md
+services/ModelService/experiments/period_analysis_report.csv
+services/ModelService/experiments/validation_period_analysis_report.csv
+services/ModelService/experiments/validation_stock_analysis_report.csv
+services/ModelService/models/elastic_net/metadata.json
+services/ModelService/models/lightgbm/metadata.json
+services/ModelService/models/ridge/metadata.json
